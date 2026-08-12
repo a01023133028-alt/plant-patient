@@ -302,6 +302,102 @@ input[type=range]:focus-visible{outline:2px solid var(--blue);outline-offset:4px
 .banner .tm{font-size:11.5px;color:var(--muted);margin-left:auto;flex:0 0 auto}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
+/* ===== 병동 뷰 전환 (목록 / 배치도) ===== */
+.seg{
+  display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--page);
+  border:1px solid var(--grid);border-radius:12px;padding:4px;margin-bottom:14px
+}
+.seg button{
+  min-height:40px;border-radius:9px;font-size:13px;font-weight:700;color:var(--text2);
+  display:flex;align-items:center;justify-content:center;gap:6px
+}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--blue-d);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.seg svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ===== 배치도 ===== */
+.maprow{margin-bottom:14px}
+.maplabel{
+  font-size:12px;font-weight:800;color:var(--text2);margin-bottom:7px;
+  display:flex;align-items:center;gap:7px
+}
+.maplabel::after{content:"";flex:1;height:1px;background:var(--grid)}
+.mapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.cell{
+  border:1px solid var(--grid);border-radius:13px;background:var(--card);padding:9px 7px 8px;
+  min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  transition:border-color .5s ease,background-color .5s ease
+}
+.cell.s-crit{border-color:var(--critical);border-width:1.5px;background:#fdf6f6;padding:8.5px 6.5px 7.5px}
+.cell.s-warn{border-color:#e7cd93;background:#fdfaf2}
+.cell .cno{font-size:12px;font-weight:800;color:var(--text2);font-variant-numeric:tabular-nums}
+.cell.s-crit .cno{color:var(--critical)}
+.cell.s-warn .cno{color:var(--warning-t)}
+.cell .cemoji{font-size:23px;line-height:1.1}
+.cell .cval{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+.cell .cunit{font-size:10.5px;font-weight:600;color:var(--muted)}
+.cell .badge{font-size:10.5px;padding:2px 7px}
+.mapempty{grid-column:1/-1}
+.legend{
+  display:flex;flex-wrap:wrap;gap:12px;background:var(--card);border:1px solid var(--grid);
+  border-radius:12px;padding:11px 12px;font-size:11.5px;color:var(--text2);margin-top:2px
+}
+.legend i{width:11px;height:11px;border-radius:4px;display:inline-block;margin-right:5px;vertical-align:-1px}
+
+/* ===== 리포트 ===== */
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.kpi .tile .n{font-size:24px}
+.rank{background:var(--card);border:1px solid var(--grid);border-radius:14px;padding:6px 13px 10px}
+.rankrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--grid)}
+.rankrow:last-child{border-bottom:0}
+.rankrow .rk{
+  width:21px;height:21px;border-radius:7px;background:var(--page);color:var(--text2);
+  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto
+}
+.rankrow .rn{font-size:13px;font-weight:700;flex:0 0 auto;font-variant-numeric:tabular-nums}
+.rankrow .rc{font-size:12px;color:var(--text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rankbar{height:7px;border-radius:4px;background:var(--page);width:74px;flex:0 0 auto;overflow:hidden}
+.rankbar i{display:block;height:100%;border-radius:4px}
+.rankrow .rv{font-size:13px;font-weight:800;width:34px;text-align:right;flex:0 0 auto;font-variant-numeric:tabular-nums}
+.gain{background:var(--blue-100);border-radius:14px;padding:13px}
+.gain .dl{color:var(--blue-d)}
+.gain .gsteps{margin-top:11px}
+.gstep{display:flex;gap:10px;align-items:flex-start;padding-bottom:10px;position:relative}
+.gstep:last-child{padding-bottom:0}
+.gstep .gd{
+  width:9px;height:9px;border-radius:50%;background:var(--blue-d);margin-top:5px;flex:0 0 auto;
+  box-shadow:0 0 0 3px rgba(28,92,171,.18)
+}
+.gstep.future .gd{background:var(--card);box-shadow:0 0 0 2px var(--blue-d) inset}
+.gstep .gt{font-size:12.5px;line-height:1.55;color:var(--blue-d)}
+.gstep .gt b{font-weight:800}
+
+/* ===== 소리 비교 ===== */
+.snd{background:var(--card);border:1px solid var(--grid);border-radius:14px;padding:13px}
+.sndrow{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--grid)}
+.sndrow:first-of-type{padding-top:3px}
+.sndrow:last-of-type{border-bottom:0;padding-bottom:3px}
+.playbtn{
+  width:46px;height:46px;border-radius:14px;flex:0 0 auto;display:flex;align-items:center;
+  justify-content:center;color:#fff;font-size:15px;line-height:1
+}
+.playbtn.p-plant{background:var(--blue)}
+.playbtn.p-noise{background:var(--muted)}
+.playbtn[aria-pressed="true"]{background:var(--critical)}
+.sndmeta{flex:1;min-width:0}
+.sndmeta .st{font-size:13.5px;font-weight:700}
+.sndmeta .ss{font-size:11.5px;color:var(--text2);margin-top:3px;line-height:1.5}
+.bars{margin-top:12px;padding-top:12px;border-top:1px solid var(--grid)}
+.barrow{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.barrow:last-child{margin-bottom:0}
+.barrow .bl{font-size:11.5px;color:var(--text2);width:78px;flex:0 0 auto}
+.bartrack{flex:1;height:16px;border-radius:5px;background:var(--page);overflow:hidden;min-width:0}
+.bartrack i{display:block;height:100%;border-radius:5px}
+.barrow .bv{font-size:12px;font-weight:800;width:46px;text-align:right;flex:0 0 auto;font-variant-numeric:tabular-nums}
+.disclaim{
+  margin-top:12px;background:#fdfaf2;border:1px solid #e7cd93;border-radius:11px;padding:10px 11px;
+  font-size:11.5px;color:var(--warning-t);line-height:1.6;font-weight:600
+}
+
 /* ===== 개체 등록 / 수정 ===== */
 .addbtn{
   width:100%;min-height:52px;margin-top:4px;border:1.5px dashed var(--blue);border-radius:14px;
@@ -409,6 +505,7 @@ input[type=range]:focus-visible{outline:2px solid var(--blue);outline-offset:4px
     <section class="screen" id="sc-ward"  role="tabpanel" aria-labelledby="tab-ward"></section>
     <section class="screen" id="sc-alert" role="tabpanel" aria-labelledby="tab-alert" hidden></section>
     <section class="screen" id="sc-chart" role="tabpanel" aria-labelledby="tab-chart" hidden></section>
+    <section class="screen" id="sc-report" role="tabpanel" aria-labelledby="tab-report" hidden></section>
     <section class="screen" id="sc-set"   role="tabpanel" aria-labelledby="tab-set"   hidden></section>
   </div>
 
@@ -426,6 +523,10 @@ input[type=range]:focus-visible{outline:2px solid var(--blue);outline-offset:4px
     <button class="tab" id="tab-chart" role="tab" aria-selected="false" aria-controls="sc-chart" data-tab="chart">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18"/><path d="M6.5 20v-5"/><path d="M12 20V8"/><path d="M17.5 20v-9"/></svg>
       차트
+    </button>
+    <button class="tab" id="tab-report" role="tab" aria-selected="false" aria-controls="sc-report" data-tab="report">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/><path d="M9.5 17v-3M12.5 17v-6M15.5 17v-4"/></svg>
+      리포트
     </button>
     <button class="tab" id="tab-set" role="tab" aria-selected="false" aria-controls="sc-set" data-tab="set">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h9m4 0h5M3 16h5m4 0h9"/><circle cx="14.5" cy="8" r="2.4"/><circle cx="9.5" cy="16" r="2.4"/></svg>
@@ -554,6 +655,7 @@ var beds     = clone(INITIAL_BEDS);
 var pushLog  = clone(INITIAL_PUSH);
 var kakaoBedId = 'A-3';
 var current  = 'ward';
+var wardView = 'list';   // 'list' | 'map'
 var selected = 'A-3';
 var threshold = 30;
 var unread   = 0;
@@ -690,7 +792,8 @@ var APPBAR = {
     if(!b) return back + head('진료 차트', '', '등록된 개체가 없습니다');
     return back + head('진료 차트', '', b.id + ' 베드 · 차트번호 ' + chartNoOf(b.planted));
   },
-  set:   function(){ return head('설정', '', '알림 대상과 기준을 조정합니다'); }
+  report: function(){ return head('주간 리포트', '', dayLabel(-6) + ' ~ ' + dayLabel(0) + ' · 최근 7일 집계'); },
+  set:   function(){ return head('설정', '', '농장 정보와 알림 기준을 조정합니다'); }
 };
 
 function head(title, en, sub){
@@ -710,16 +813,28 @@ function renderWard(){
        tile(c.crit, '위험', 'var(--critical)',  'var(--critical)') +
        '</div>';
 
-  h += '<h2 class="sec">오늘의 진료 대기</h2>';
-  if(list.length){
-    list.forEach(function(b){ h += bedCard(b); });
-  }else{
-    h += '<div class="empty">아직 등록된 개체가 없습니다.<br>아래 버튼으로 첫 개체를 등록해 주세요.</div>';
-  }
+  h += '<div class="seg" role="group" aria-label="병동 보기 방식">' +
+    '<button type="button" data-ward-view="list" aria-pressed="' + (wardView === 'list') + '">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>목록</button>' +
+    '<button type="button" data-ward-view="map" aria-pressed="' + (wardView === 'map') + '">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/>' +
+      '<rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/>' +
+      '<rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>배치도</button>' +
+    '</div>';
 
-  if(untracked() > 0){
-    h += '<div class="restnote"><span class="dot" style="background:var(--good)"></span>' +
-         '나머지 ' + untracked() + '개체는 모두 <b>정상</b>입니다</div>';
+  if(wardView === 'list'){
+    h += '<h2 class="sec">오늘의 진료 대기</h2>';
+    if(list.length){
+      list.forEach(function(b){ h += bedCard(b); });
+    }else{
+      h += '<div class="empty">아직 등록된 개체가 없습니다.<br>아래 버튼으로 첫 개체를 등록해 주세요.</div>';
+    }
+    if(untracked() > 0){
+      h += '<div class="restnote"><span class="dot" style="background:var(--good)"></span>' +
+           '나머지 ' + untracked() + '개체는 모두 <b>정상</b>입니다</div>';
+    }
+  }else{
+    h += mapView();
   }
 
   h += '<h2 class="sec">개체 관리</h2>';
@@ -727,6 +842,54 @@ function renderWard(){
        '<span class="plus" aria-hidden="true">＋</span>새 개체 등록</button>';
 
   $('sc-ward').innerHTML = h;
+}
+
+/* --- 1-B. 배치도 --- */
+function rowKey(id){ var m = String(id).match(/^\s*([^\d\-\s]+)/); return m ? m[1].toUpperCase() : '#'; }
+function numKey(id){ var m = String(id).match(/(\d+)/);            return m ? +m[1] : 0; }
+
+function mapView(){
+  if(!beds.length){
+    return '<div class="empty">아직 등록된 개체가 없습니다.<br>아래 버튼으로 첫 개체를 등록해 주세요.</div>';
+  }
+  var groups = {}, order = [];
+  beds.forEach(function(b){
+    var k = rowKey(b.id);
+    if(!groups[k]){ groups[k] = []; order.push(k); }
+    groups[k].push(b);
+  });
+  order.sort();
+
+  var h = '<h2 class="sec">' + esc(FARM.name) + ' 배치도</h2>';
+  order.forEach(function(k){
+    var row = groups[k].slice().sort(function(a,b){ return numKey(a.id) - numKey(b.id); });
+    h += '<div class="maprow"><div class="maplabel">' + esc(k) + ' 열 · ' + row.length + '개체</div>' +
+         '<div class="mapgrid">';
+    row.forEach(function(b){
+      var st = ST[b.status];
+      h += '<button class="cell s-' + b.status + '" type="button" data-bed="' + b.id + '" ' +
+        'aria-label="' + b.id + ' ' + b.crop + ', ' + st.label + ', 시간당 ' + b.hourly + '회. 진료 차트 열기">' +
+        '<span class="cno">' + b.id + '</span>' +
+        '<span class="cemoji" aria-hidden="true">' + b.emoji + '</span>' +
+        '<span class="cval">' + b.hourly + '<span class="cunit">회/시간</span></span>' +
+        '<span class="badge ' + st.badge + '">' + st.label + '</span>' +
+        '</button>';
+    });
+    h += '</div></div>';
+  });
+
+  if(untracked() > 0){
+    h += '<div class="restnote" style="margin-bottom:12px">' +
+         '<span class="dot" style="background:var(--good)"></span>' +
+         '배치도에 없는 ' + untracked() + '개체는 개별 추적 대상이 아니며 모두 <b>정상</b>입니다</div>';
+  }
+  h += '<div class="legend">' +
+    '<span><i style="background:var(--good)"></i>정상</span>' +
+    '<span><i style="background:var(--warning)"></i>주의</span>' +
+    '<span><i style="background:var(--critical)"></i>위험</span>' +
+    '<span style="color:var(--muted)">칸을 누르면 진료 차트가 열립니다</span>' +
+    '</div>';
+  return h;
 }
 
 function tile(n, label, numColor, dotColor){
@@ -752,7 +915,15 @@ function patchBed(b){
   var st = ST[b.status];
   var ward = $('sc-ward');
   var card = ward.querySelector('[data-bed="' + b.id + '"]');
-  if(card){
+  if(card && wardView === 'map'){
+    card.className = 'cell s-' + b.status;
+    card.setAttribute('aria-label', b.id + ' ' + b.crop + ', ' + st.label +
+      ', 시간당 ' + b.hourly + '회. 진료 차트 열기');
+    var cbadge = card.querySelector('.badge');
+    if(cbadge){ cbadge.className = 'badge ' + st.badge; cbadge.textContent = st.label; }
+    var cval = card.querySelector('.cval');
+    if(cval) cval.innerHTML = b.hourly + '<span class="cunit">회/시간</span>';
+  }else if(card){
     card.className = 'bed s-' + b.status;
     card.setAttribute('aria-label', b.id + ' 베드 ' + b.crop + ', ' + st.label +
       ', 최근 1시간 ' + b.hourly + '회. 진료 차트 열기');
@@ -872,7 +1043,238 @@ function renderChart(){
   $('sc-chart').innerHTML = h;
 }
 
-/* --- 4. 설정 --- */
+/* --- 4. 주간 리포트 --- */
+
+/* 화면에 이미 있는 7일 계측값에서만 통계를 뽑는다 (별도 가짜 수치를 만들지 않음) */
+function weekStats(){
+  var s = { alerts:0, warns:0, quiet:0, daily:[0,0,0,0,0,0,0], peak:[], firstSignal:null };
+  beds.forEach(function(b){
+    var hadCrit = false, hadWarn = false;
+    for(var d=0; d<7; d++){
+      var v = b.series[d];
+      if(v >= threshold){ s.alerts++; s.daily[d]++; hadCrit = true; }
+      else if(v >= threshold/2){ s.warns++; hadWarn = true; }
+    }
+    if(!hadCrit && !hadWarn) s.quiet++;
+    s.peak.push({ id:b.id, crop:b.crop, emoji:b.emoji, status:b.status,
+                  max: Math.max.apply(null, b.series) });
+  });
+  s.quiet += untracked();
+  s.peak.sort(function(a,b){ return b.max - a.max; });
+
+  /* 가장 심한 개체의 첫 이상 신호 시점 */
+  var top = s.peak.length ? bedById(s.peak[0].id) : null;
+  if(top && s.peak[0].max >= threshold/2){
+    for(var d=0; d<7; d++){
+      if(top.series[d] >= threshold/2){ s.firstSignal = { bed: top, daysAgo: 6 - d }; break; }
+    }
+  }
+  return s;
+}
+
+function dayLabel(offset){
+  var t = new Date(); t.setDate(t.getDate() + offset);
+  return (t.getMonth() + 1) + '월 ' + t.getDate() + '일';
+}
+
+function dailyChartSVG(daily){
+  var maxVal = Math.max(1, Math.max.apply(null, daily));
+  var BASE = 96, TOP = 20;
+  function y(v){ return BASE - (v / (maxVal * 1.25)) * (BASE - TOP); }
+  var s = '<svg viewBox="0 0 300 122" style="display:block;width:100%;height:auto" role="img" ' +
+          'aria-label="일자별 위험 단계 개체 수. ' + daily.join(', ') + '개체.">';
+  s += '<line x1="0" y1="' + BASE + '" x2="300" y2="' + BASE + '" stroke="#e5e4e0" stroke-width="1"/>';
+  for(var i=0;i<7;i++){
+    var v = daily[i], x = 8 + i*41, h = Math.max(3, BASE - y(v));
+    s += '<rect x="' + x + '" y="' + (BASE-h).toFixed(1) + '" width="26" height="' + h.toFixed(1) +
+         '" rx="4" fill="' + (v > 0 ? '#d03b3b' : '#cde2fb') + '"/>';
+    if(v > 0) s += '<text x="' + (x+13) + '" y="' + (BASE-h-6).toFixed(1) + '" font-size="11" ' +
+                   'fill="#0b0b0b" text-anchor="middle" font-weight="800">' + v + '</text>';
+  }
+  var labels = ['6일 전','','4일 전','','2일 전','','오늘'];
+  for(var j=0;j<7;j++){
+    if(!labels[j]) continue;
+    s += '<text x="' + (8 + j*41 + 13) + '" y="112" font-size="11" fill="#8a8985" text-anchor="middle"' +
+         (j===6 ? ' font-weight="700" fill="#52514e"' : '') + '>' + labels[j] + '</text>';
+  }
+  return s + '</svg>';
+}
+
+function renderReport(){
+  var s = weekStats(), h = '';
+
+  h += '<div class="kpi">' +
+    tile(s.alerts, '위험 경보', 'var(--critical)', 'var(--critical)') +
+    tile(s.warns,  '주의 신호', 'var(--warning-t)', 'var(--warning)') +
+    tile(s.quiet,  '이상 없음', 'var(--good)',      'var(--good)') +
+    '</div>';
+  h += '<div class="fhint" style="margin-top:8px;padding:0 2px">최근 7일 계측값에서 집계했습니다. ' +
+       '위험 기준 <b class="tnum">' + threshold + '회</b>, 주의 기준 <b class="tnum">' +
+       Math.round(threshold/2) + '회</b>(기준의 절반)입니다.</div>';
+
+  h += '<h2 class="sec">일자별 위험 개체 수</h2>';
+  h += '<div class="card">' + dailyChartSVG(s.daily) + '</div>';
+
+  h += '<h2 class="sec">주간 최고치 순위</h2>';
+  if(s.peak.length){
+    h += '<div class="rank">';
+    s.peak.slice(0, 5).forEach(function(p, i){
+      var st = ST[p.status];
+      var pct = Math.min(100, Math.round(p.max / Math.max(threshold, s.peak[0].max) * 100));
+      h += '<div class="rankrow">' +
+        '<span class="rk">' + (i+1) + '</span>' +
+        '<span class="rn">' + p.id + '</span>' +
+        '<span class="rc">' + p.emoji + ' ' + esc(p.crop) + '</span>' +
+        '<span class="rankbar"><i style="width:' + pct + '%;background:' + st.line + '"></i></span>' +
+        '<span class="rv">' + p.max + '</span>' +
+        '</div>';
+    });
+    h += '</div>';
+    h += '<div class="fhint" style="margin-top:8px;padding:0 2px">숫자는 최근 7일 중 가장 높았던 시간당 발생 횟수입니다.</div>';
+  }else{
+    h += '<div class="empty">집계할 개체가 없습니다.</div>';
+  }
+
+  h += '<h2 class="sec">조기경보로 확보한 시간</h2>';
+  if(s.firstSignal){
+    var fb = s.firstSignal.bed, ago = s.firstSignal.daysAgo;
+    h += '<div class="gain"><div class="dl">가장 심한 개체 · ' + fb.id + ' ' + esc(fb.crop) + '</div>' +
+      '<div class="gsteps">' +
+      '<div class="gstep"><span class="gd"></span><span class="gt">' +
+        '<b>' + dayLabel(-ago) + '</b> — 초음파 이상 신호 첫 감지 (' + ago + '일 전)</span></div>' +
+      '<div class="gstep"><span class="gd"></span><span class="gt">' +
+        '<b>오늘</b> — 시간당 ' + fb.hourly + '회, 육안 증상은 아직 없음</span></div>' +
+      '<div class="gstep future"><span class="gd"></span><span class="gt">' +
+        '<b>' + dayLabel(2) + '~' + dayLabel(3) + '</b> — 육안 시듦 증상 예상 시점</span></div>' +
+      '</div>' +
+      '<div class="gt" style="margin-top:11px;font-weight:800">눈으로 보이기 ' + (ago + 2) + '~' + (ago + 3) +
+      '일 전에 이미 알고 있었습니다.</div></div>';
+  }else{
+    h += '<div class="empty">이번 주에는 기준을 넘은 이상 신호가 없습니다.</div>';
+  }
+
+  h += '<h2 class="sec">이 소리를 들어보세요</h2>';
+  h += '<div class="snd">' +
+    '<div class="sndrow">' +
+      '<button class="playbtn p-plant" type="button" data-play="plant" aria-pressed="false" ' +
+      'aria-label="식물 스트레스 소리 재생">▶</button>' +
+      '<span class="sndmeta"><span class="st">식물 스트레스 소리</span>' +
+      '<span class="ss">40~80kHz 클릭음을 20배 느리게 낮춰 2~4kHz로 재현. 짧고 날카로운 딱-딱 소리입니다.</span></span>' +
+    '</div>' +
+    '<div class="sndrow">' +
+      '<button class="playbtn p-noise" type="button" data-play="noise" aria-pressed="false" ' +
+      'aria-label="온실 배경소음 재생">▶</button>' +
+      '<span class="sndmeta"><span class="st">온실 배경소음</span>' +
+      '<span class="ss">환기팬·설비 소음. 낮은 주파수에 에너지가 몰려 있어 웅- 하는 소리입니다.</span></span>' +
+    '</div>' +
+    '<div class="bars">' +
+      '<div class="barrow"><span class="bl">식물 소리</span>' +
+        '<span class="bartrack"><i style="width:1%;background:var(--blue)"></i></span>' +
+        '<span class="bv">0.2%</span></div>' +
+      '<div class="barrow"><span class="bl">온실 소음</span>' +
+        '<span class="bartrack"><i style="width:18.6%;background:var(--muted)"></i></span>' +
+        '<span class="bv">18.6%</span></div>' +
+      '<div class="fhint" style="margin-top:9px">20kHz 미만 성분이 차지하는 비율입니다. ' +
+      '공개 데이터 <b class="tnum">5,477건</b>을 재분석한 결과로, 대역 필터만으로 1차 분리가 가능하다는 근거입니다.</div>' +
+    '</div>' +
+    '<div class="disclaim">두 소리는 특성을 설명하기 위해 앱에서 <b>합성한 재현음</b>입니다. ' +
+    '실제 녹음이 아닙니다.</div>' +
+    '</div>';
+
+  h += '<p class="foot">집계 기간: ' + dayLabel(-6) + ' ~ ' + dayLabel(0) + '<br>' +
+       '화면의 계측값은 시연용 예시 데이터입니다.</p>';
+
+  $('sc-report').innerHTML = h;
+  syncPlayButtons();
+}
+
+/* --- 4-B. 소리 재현 (Web Audio · 외부 파일 없음) --- */
+var audioCtx = null, audioSrc = null, playingKind = null;
+
+function audioOK(){ return !!(window.AudioContext || window.webkitAudioContext); }
+function ac(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function rng(seed){
+  var s = seed;
+  return function(){ s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+}
+function normalize(d, peak){
+  var m = 0;
+  for(var i=0;i<d.length;i++) if(Math.abs(d[i]) > m) m = Math.abs(d[i]);
+  if(m > 0){ var g = peak / m; for(var j=0;j<d.length;j++) d[j] *= g; }
+}
+
+/* 식물 클릭음: 2~4kHz 대역의 짧은 감쇠 버스트를 불규칙 간격으로 */
+function plantBuffer(ctx){
+  var dur = 3.2, sr = ctx.sampleRate;
+  var buf = ctx.createBuffer(1, Math.floor(dur * sr), sr), d = buf.getChannelData(0);
+  var r = rng(20260812);
+  for(var k=0;k<28;k++){
+    var start = Math.floor((0.06 + r() * (dur - 0.25)) * sr);
+    var len   = Math.floor((0.004 + r() * 0.006) * sr);
+    var f     = 2000 + r() * 2100;
+    for(var i=0;i<len;i++){
+      if(start + i >= d.length) break;
+      var env = Math.exp(-i / (len * 0.26));
+      d[start + i] += (Math.sin(2 * Math.PI * f * i / sr) * 0.75 + (r() * 2 - 1) * 0.25) * env;
+    }
+  }
+  normalize(d, 0.9);
+  return buf;
+}
+
+/* 온실 소음: 저역 럼블 + 전원 험 */
+function noiseBuffer(ctx){
+  var dur = 3.2, sr = ctx.sampleRate;
+  var buf = ctx.createBuffer(1, Math.floor(dur * sr), sr), d = buf.getChannelData(0);
+  var r = rng(777), lp = 0;
+  for(var i=0;i<d.length;i++){
+    lp = lp * 0.988 + (r() * 2 - 1) * 0.012;
+    d[i] = lp * 7 +
+           Math.sin(2 * Math.PI * 60  * i / sr) * 0.05 +
+           Math.sin(2 * Math.PI * 120 * i / sr) * 0.025;
+  }
+  normalize(d, 0.9);
+  return buf;
+}
+
+function stopSound(){
+  if(audioSrc){ try { audioSrc.onended = null; audioSrc.stop(); } catch(e){} }
+  audioSrc = null; playingKind = null;
+  syncPlayButtons();
+}
+
+function playSound(kind){
+  if(!audioOK()) return;
+  if(playingKind === kind){ stopSound(); return; }
+  stopSound();
+  var ctx = ac();
+  if(ctx.state === 'suspended') ctx.resume();
+  var src = ctx.createBufferSource();
+  src.buffer = kind === 'plant' ? plantBuffer(ctx) : noiseBuffer(ctx);
+  var g = ctx.createGain();
+  g.gain.value = 0.3;
+  src.connect(g); g.connect(ctx.destination);
+  src.onended = function(){ audioSrc = null; playingKind = null; syncPlayButtons(); };
+  src.start();
+  audioSrc = src; playingKind = kind;
+  syncPlayButtons();
+  announce(kind === 'plant' ? '식물 스트레스 재현음을 재생합니다.' : '온실 배경소음 재현음을 재생합니다.');
+}
+
+function syncPlayButtons(){
+  var btns = document.querySelectorAll('[data-play]');
+  for(var i=0;i<btns.length;i++){
+    var on = btns[i].getAttribute('data-play') === playingKind;
+    btns[i].setAttribute('aria-pressed', String(on));
+    btns[i].textContent = on ? '■' : '▶';
+    if(!audioOK()){ btns[i].disabled = true; btns[i].textContent = '—'; }
+  }
+}
+
+/* --- 5. 설정 --- */
 function renderSet(){
   var h = '';
 
@@ -1162,11 +1564,13 @@ function deleteBed(bedId){
    4. 탭 전환
    ========================================================= */
 
-var RENDER = { ward:renderWard, alert:renderAlert, chart:renderChart, set:renderSet };
+var RENDER = { ward:renderWard, alert:renderAlert, chart:renderChart, report:renderReport, set:renderSet };
+var TABS = ['ward','alert','chart','report','set'];
 
 function go(tab){
+  if(tab !== 'report') stopSound();
   current = tab;
-  ['ward','alert','chart','set'].forEach(function(t){
+  TABS.forEach(function(t){
     $('sc-' + t).hidden = (t !== tab);
     var btn = $('tab-' + t);
     btn.setAttribute('aria-selected', String(t === tab));
@@ -1374,6 +1778,17 @@ document.addEventListener('click', function(e){
   if(e.target.closest('[data-sheet-close]')){ closeSheet(); return; }
   if(e.target.closest('#sheetSave')){ if(sheetSubmit) sheetSubmit(); return; }
   if(sheetOpen && !e.target.closest('.sheet-panel')) return;
+
+  var playBtn = e.target.closest('[data-play]');
+  if(playBtn){ playSound(playBtn.getAttribute('data-play')); return; }
+
+  var viewBtn = e.target.closest('[data-ward-view]');
+  if(viewBtn){
+    wardView = viewBtn.getAttribute('data-ward-view');
+    renderWard();
+    announce(wardView === 'map' ? '배치도 보기로 바꿨습니다.' : '목록 보기로 바꿨습니다.');
+    return;
+  }
 
   if(e.target.closest('[data-add-bed]')){ openBedSheet(null); return; }
 
