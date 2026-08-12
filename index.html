@@ -23,7 +23,7 @@ html,body{height:100%}
 body{
   font-family:Pretendard,'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;
   background:var(--page); color:var(--text);
-  font-size:14px; line-height:1.5;
+  font-size:15px; line-height:1.5;
   display:flex; justify-content:center;
 }
 button,input,select{font-family:inherit;color:inherit}
@@ -67,19 +67,34 @@ button{background:none;border:0;cursor:pointer}
 .screen[hidden]{display:none}
 @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 
-.sec{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.4px;margin:18px 0 8px}
+.sec{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.4px;margin:20px 0 9px}
 .sec:first-child{margin-top:2px}
+
+/* ===== 오늘 할 일 (첫 화면 맨 위) ===== */
+.todo{
+  border-radius:16px;padding:15px 14px;margin-bottom:15px;
+  border:1.5px solid var(--critical);background:#fdf6f6
+}
+.todo.s-warn{border-color:#e7cd93;background:#fdfaf2}
+.todo.ok{border-color:var(--good);background:#f4faf4}
+.tdl{font-size:12.5px;font-weight:800;letter-spacing:.4px;color:var(--critical)}
+.todo.s-warn .tdl{color:var(--warning-t)}
+.todo.ok .tdl{color:var(--good)}
+.tdv{font-size:19px;font-weight:800;margin-top:8px;line-height:1.4;letter-spacing:-.4px}
+.tdp{font-size:14.5px;color:var(--text2);margin-top:9px;line-height:1.55}
+.tdp b{color:var(--text);font-weight:700}
+.todo .btn{margin-top:13px}
 
 /* ===== 상태 요약 타일 ===== */
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .tile{background:var(--card);border:1px solid var(--grid);border-radius:13px;padding:13px 8px;text-align:center}
-.tile .n{font-size:27px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
-.tile .l{font-size:12px;color:var(--text2);margin-top:5px;font-weight:700}
+.tile .n{font-size:29px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+.tile .l{font-size:13px;color:var(--text2);margin-top:5px;font-weight:700}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:1px}
 
 /* ===== 배지 ===== */
 .badge{
-  font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:999px;color:#fff;
+  font-size:12.5px;font-weight:800;padding:3px 9px;border-radius:999px;color:#fff;
   letter-spacing:.2px;flex:0 0 auto;line-height:1.35
 }
 .b-good{background:var(--good)} .b-warn{background:var(--warning-t)} .b-crit{background:var(--critical)}
@@ -101,8 +116,9 @@ button{background:none;border:0;cursor:pointer}
 .bed.s-crit .bedno{background:#f8dede;color:var(--critical)}
 .bed.s-warn .bedno{background:#f6e9cc;color:var(--warning-t)}
 .bedinfo{flex:1;min-width:0}
-.bedinfo .t{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:7px}
-.bedinfo .s{font-size:12px;color:var(--text2);margin-top:4px}
+.bedinfo .t{font-size:16px;font-weight:700;display:flex;align-items:center;gap:7px}
+.bedinfo .s{font-size:13.5px;color:var(--text2);margin-top:5px}
+.bedinfo .s b{color:var(--text);font-weight:700}
 .spark{flex:0 0 auto}
 .restnote{
   font-size:12px;color:var(--text2);background:var(--card);border:1px dashed var(--grid);
@@ -117,8 +133,8 @@ button{background:none;border:0;cursor:pointer}
 .kbub{background:#fff;border-radius:4px 15px 15px 15px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .khead{background:var(--critical);color:#fff;padding:10px 14px;font-size:12.5px;font-weight:800}
 .kbody{padding:14px}
-.kbody .kt{font-size:14px;font-weight:800;margin-bottom:10px;line-height:1.45}
-.kbody .kp{font-size:12.5px;color:var(--text2);line-height:1.7}
+.kbody .kt{font-size:15.5px;font-weight:800;margin-bottom:10px;line-height:1.45}
+.kbody .kp{font-size:13.5px;color:var(--text2);line-height:1.75}
 .kbody .kp b{color:var(--text);font-weight:700}
 .kbtn{
   display:block;width:100%;margin-top:13px;background:var(--blue);color:#fff;text-align:center;
@@ -136,8 +152,8 @@ button{background:none;border:0;cursor:pointer}
 .pi{width:31px;height:31px;border-radius:9px;background:var(--blue);flex:0 0 auto;position:relative}
 .pi::before{content:"";position:absolute;left:7px;top:14.75px;width:17px;height:2.5px;background:#fff;border-radius:2px}
 .pi::after{content:"";position:absolute;left:14.25px;top:7px;width:2.5px;height:17px;background:#fff;border-radius:2px}
-.push .pt{font-size:13px;font-weight:800}
-.push .pb{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.5}
+.push .pt{font-size:14px;font-weight:800}
+.push .pb{font-size:13px;color:var(--text2);margin-top:4px;line-height:1.5}
 .push .tm{font-size:11.5px;color:var(--muted);margin-left:auto;flex:0 0 auto;padding-left:6px}
 
 /* ===== 진료 차트 ===== */
@@ -152,11 +168,11 @@ button{background:none;border:0;cursor:pointer}
 }
 .patient.s-crit .pav{background:#f8dede}
 .patient.s-warn .pav{background:#f6e9cc}
-.pn{font-size:16px;font-weight:800;display:flex;align-items:center;gap:7px}
-.pd{font-size:12px;color:var(--text2);margin-top:5px;line-height:1.55}
+.pn{font-size:17.5px;font-weight:800;display:flex;align-items:center;gap:7px}
+.pd{font-size:13.5px;color:var(--text2);margin-top:6px;line-height:1.55}
 
 .card{background:var(--card);border:1px solid var(--grid);border-radius:14px;padding:13px}
-.cc-h{font-size:13.5px;font-weight:800}
+.cc-h{font-size:14.5px;font-weight:800}
 .cc-s{font-size:12px;color:var(--muted);margin-top:3px;margin-bottom:12px}
 .cc-legend{
   display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;padding-top:11px;
@@ -167,13 +183,14 @@ button{background:none;border:0;cursor:pointer}
 .dx{border-radius:14px;padding:13px;border:1.5px solid var(--critical);background:#fdf6f6}
 .dx.s-good{border-color:var(--good);background:#f4faf4}
 .dx.s-warn{border-color:var(--warning-t);background:#fdfaf2}
-.dl{font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--critical)}
+.dl{font-size:12.5px;font-weight:800;letter-spacing:.4px;color:var(--critical)}
 .dx.s-good .dl{color:var(--good)} .dx.s-warn .dl{color:var(--warning-t)}
-.dv{font-size:17px;font-weight:800;margin-top:6px;letter-spacing:-.3px}
-.dp{font-size:12.5px;color:var(--text2);margin-top:7px;line-height:1.6}
+.dv{font-size:18.5px;font-weight:800;margin-top:7px;letter-spacing:-.4px;line-height:1.4}
+.dsub{font-size:12.5px;color:var(--muted);margin-top:6px;font-weight:700}
+.dp{font-size:13.5px;color:var(--text2);margin-top:8px;line-height:1.6}
 .rx{background:var(--blue-100);border-radius:14px;padding:13px}
 .rx .dl{color:var(--blue-d)}
-.rx .dv{font-size:15px;color:var(--blue-d)}
+.rx .dv{font-size:16.5px;color:var(--blue-d)}
 
 .tl{position:relative;padding-left:17px}
 .tl::before{content:"";position:absolute;left:4px;top:6px;bottom:8px;width:1.5px;background:var(--grid)}
@@ -184,12 +201,12 @@ button{background:none;border:0;cursor:pointer}
   background:var(--surface);border:2.5px solid var(--blue)
 }
 .tli.crit::before{border-color:var(--critical)}
-.tli .d{font-size:12px;color:var(--muted);font-weight:700}
-.tli .x{font-size:13px;margin-top:3px;line-height:1.5}
+.tli .d{font-size:12.5px;color:var(--muted);font-weight:700}
+.tli .x{font-size:14px;margin-top:4px;line-height:1.5}
 
 .evidence{
   background:var(--card);border:1px solid var(--grid);border-radius:14px;padding:13px;
-  font-size:12px;color:var(--text2);line-height:1.65
+  font-size:13px;color:var(--text2);line-height:1.7
 }
 .evidence b{color:var(--text);font-weight:700}
 .evidence .src{font-size:11.5px;color:var(--muted);margin-top:8px;padding-top:9px;border-top:1px solid var(--grid)}
@@ -198,8 +215,8 @@ button{background:none;border:0;cursor:pointer}
 .set-group{background:var(--card);border:1px solid var(--grid);border-radius:14px;overflow:hidden}
 .set-row{padding:14px 13px;border-bottom:1px solid var(--grid)}
 .set-row:last-child{border-bottom:0}
-.set-row .lab{font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.set-row .hint{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.6}
+.set-row .lab{font-size:14.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.set-row .hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.6}
 .inp{
   width:100%;min-width:0;margin-top:9px;padding:11px 12px;border:1px solid var(--grid);border-radius:10px;
   background:var(--surface);font-size:14px;min-height:44px;font-variant-numeric:tabular-nums
@@ -244,8 +261,8 @@ input[type=range]:focus-visible{outline:2px solid var(--blue);outline-offset:4px
 .demo-box .dh{font-size:13.5px;font-weight:800;color:var(--blue-d)}
 .demo-box .dq{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6}
 .btn{
-  display:block;width:100%;min-height:48px;border-radius:11px;font-size:14.5px;font-weight:800;
-  padding:13px;margin-top:11px;transition:background-color .15s ease,opacity .15s ease
+  display:block;width:100%;min-height:52px;border-radius:11px;font-size:15.5px;font-weight:800;
+  padding:14px;margin-top:11px;transition:background-color .15s ease,opacity .15s ease
 }
 .btn-primary{background:var(--blue);color:#fff}
 .btn-primary:active{background:var(--blue-d)}
@@ -460,6 +477,57 @@ input[type=range]:focus-visible{outline:2px solid var(--blue);outline-offset:4px
 .confirm-msg{font-size:13.5px;line-height:1.7;color:var(--text2);margin-bottom:6px}
 .confirm-msg b{color:var(--text)}
 
+/* ===== 큰 글씨 모드 (설정에서 켬) — 읽어야 하는 글자를 약 20% 키운다 ===== */
+.app.big .tdv{font-size:23px}
+.app.big .tdp{font-size:17px}
+.app.big .tile .n{font-size:34px}
+.app.big .tile .l{font-size:15px}
+.app.big .sec{font-size:15px}
+.app.big .badge{font-size:14.5px;padding:4px 10px}
+.app.big .bedinfo .t{font-size:19px}
+.app.big .bedinfo .s{font-size:16px}
+.app.big .bed{min-height:80px;padding:15px}
+.app.big .bedno{width:50px;height:50px;font-size:15.5px}
+.app.big .restnote{font-size:14.5px}
+.app.big .cell{min-height:120px}
+.app.big .cell .cno{font-size:14px}
+.app.big .cell .cemoji{font-size:27px}
+.app.big .cell .cval{font-size:17px}
+.app.big .kbody .kt{font-size:18px}
+.app.big .kbody .kp{font-size:16px}
+.app.big .kbtn{font-size:16.5px;padding:15px}
+.app.big .push .pt{font-size:16.5px}
+.app.big .push .pb{font-size:15px}
+.app.big .pn{font-size:21px}
+.app.big .pd{font-size:16px}
+.app.big .cc-h{font-size:17px}
+.app.big .cc-s{font-size:14px}
+.app.big .dl{font-size:14.5px}
+.app.big .dv{font-size:22px}
+.app.big .dsub{font-size:14.5px}
+.app.big .dp{font-size:16px}
+.app.big .rx .dv{font-size:19.5px}
+.app.big .tli .d{font-size:14.5px}
+.app.big .tli .x{font-size:16.5px}
+.app.big .evidence{font-size:15.5px}
+.app.big .btn{font-size:18px;min-height:58px}
+.app.big .set-row .lab{font-size:17px}
+.app.big .set-row .hint{font-size:14.5px}
+.app.big .inp{font-size:16.5px;min-height:50px}
+.app.big .appbar .brand h1{font-size:20px}
+.app.big .appbar .loc{font-size:14px}
+.app.big .tab{font-size:13px}
+.app.big .seg button{font-size:15.5px;min-height:46px}
+.app.big .rankrow .rn,.app.big .rankrow .rv{font-size:15.5px}
+.app.big .rankrow .rc{font-size:14.5px}
+.app.big .gstep .gt{font-size:15px}
+.app.big .sndmeta .st{font-size:16px}
+.app.big .sndmeta .ss{font-size:14px}
+.app.big .fld > label{font-size:15.5px}
+.app.big .fld .fhint{font-size:14px}
+.app.big .empty{font-size:15.5px}
+.app.big .disclaim{font-size:14px}
+
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001s !important;transition-duration:.001s !important}
 }
@@ -658,6 +726,7 @@ var current  = 'ward';
 var wardView = 'list';   // 'list' | 'map'
 var selected = 'A-3';
 var threshold = 30;
+var bigText  = false;
 var unread   = 0;
 var demoOn   = false, demoStep = 0, rafId = null, timers = [];
 
@@ -687,12 +756,26 @@ function todayLabel(){
   return (t.getMonth() + 1) + '월 ' + t.getDate() + '일';
 }
 
-/* 상태에 맞는 보조 문구를 다시 만든다 */
+/* 상태에 맞는 보조 문구를 다시 만든다.
+   숫자보다 "평소와 견줘 어떤가"를 먼저 읽히게 한다 */
 function refreshNote(b){
-  if(b.status === 'good'){ b.note = '안정'; return; }
-  if(b.status === 'warn'){ b.note = '관찰 필요'; return; }
+  if(b.status === 'good'){ b.note = '평소와 비슷합니다'; return; }
   var base = b.baseline > 0 ? b.baseline : 1;
-  b.note = '평소의 ' + Math.max(2, Math.round(b.hourly / base)) + '배';
+  var n = Math.floor(b.hourly / base);
+  b.note = n >= 2 ? '평소보다 ' + n + '배 많습니다' : '평소보다 조금 많습니다';
+}
+
+/* 진단명을 쉬운 말로 바꾼다 (전문 용어는 아래에 함께 보여준다) */
+var PLAIN_DX = {
+  '수분 스트레스 의심'   : '물이 부족한 것 같습니다',
+  '초기 수분 스트레스 가능': '물이 조금 부족할 수 있습니다',
+  '경미한 신호 증가'     : '신호가 조금 늘었습니다',
+  '이상 없음'           : '이상 없습니다'
+};
+function dxPlain(b){
+  return b.dx.plain || PLAIN_DX[b.dx.title] ||
+    (b.status === 'crit' ? '이상 신호가 크게 늘었습니다'
+     : b.status === 'warn' ? '이상 신호가 늘고 있습니다' : '이상 없습니다');
 }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
   return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
@@ -804,8 +887,29 @@ function head(title, en, sub){
 }
 
 /* --- 1. 병동 --- */
+/* 첫 화면 맨 위 — "지금 무엇을 해야 하는가"를 한 문장으로 */
+function todoCard(){
+  var top = sortedBeds()[0];
+  if(!top || top.status === 'good'){
+    return '<div class="todo ok">' +
+      '<div class="tdl">오늘 할 일</div>' +
+      '<div class="tdv">지금 손볼 개체가 없습니다</div>' +
+      '<div class="tdp">등록된 개체가 모두 평소와 비슷합니다. 계속 지켜보고 있습니다.</div>' +
+      '</div>';
+  }
+  return '<div class="todo s-' + top.status + '">' +
+    '<div class="tdl">오늘 할 일</div>' +
+    '<div class="tdv">' + top.id + ' ' + esc(top.crop) + ', ' + esc(dxPlain(top)) + '</div>' +
+    '<div class="tdp"><b>' + esc(top.rx) + '</b><br>' + esc(top.note) + ' · 시간당 ' + top.hourly + '회</div>' +
+    '<button class="btn btn-primary" type="button" data-bed="' + top.id + '">' +
+    top.id + ' 자세히 보기</button>' +
+    '</div>';
+}
+
 function renderWard(){
   var c = counts(), list = sortedBeds(), h = '';
+
+  h += todoCard();
 
   h += '<div class="tiles">' +
        tile(c.good, '정상', 'var(--good)',      'var(--good)') +
@@ -904,8 +1008,8 @@ function bedCard(b){
     '<span class="bedno">' + b.id + '</span>' +
     '<span class="bedinfo">' +
       '<span class="t">' + b.crop + ' <span class="badge ' + st.badge + '">' + st.label + '</span></span>' +
-      '<span class="s"><span class="tnum" data-hourly="' + b.id + '">최근 1시간 ' + b.hourly + '회</span>' +
-      ' · <span data-note="' + b.id + '">' + esc(b.note) + '</span></span>' +
+      '<span class="s"><b data-note="' + b.id + '">' + esc(b.note) + '</b>' +
+      ' · <span class="tnum" data-hourly="' + b.id + '">시간당 ' + b.hourly + '회</span></span>' +
     '</span>' + sparkSVG(b) + '</button>';
 }
 
@@ -930,7 +1034,7 @@ function patchBed(b){
     var badge = card.querySelector('.badge');
     if(badge){ badge.className = 'badge ' + st.badge; badge.textContent = st.label; }
     var hv = card.querySelector('[data-hourly="' + b.id + '"]');
-    if(hv) hv.textContent = '최근 1시간 ' + b.hourly + '회';
+    if(hv) hv.textContent = '시간당 ' + b.hourly + '회';
     var nt = card.querySelector('[data-note="' + b.id + '"]');
     if(nt) nt.textContent = b.note;
   }
@@ -958,9 +1062,9 @@ function renderAlert(){
       '<div class="kbody">' +
         '<div class="kt">' + b.id + ' 베드 ' + b.crop + '가<br>이상 신호를 보내고 있습니다</div>' +
         '<div class="kp">' +
-          '최근 1시간 초음파 <b class="tnum">' + b.hourly + '회</b> (평소 ' + b.baseline + '회)<br>' +
-          '수분 스트레스 가능성 <b class="tnum">' + b.dx.prob + '%</b><br>' +
-          '육안 증상 예상 시점 <b>2~3일 후</b>' +
+          '<b>' + esc(dxPlain(b)) + '</b><br>' +
+          '지금 <b class="tnum">시간당 ' + b.hourly + '회</b> (평소 ' + b.baseline + '회)<br>' +
+          '눈에 보이는 증상은 <b>2~3일 뒤</b>에 나타납니다' +
         '</div>' +
         '<button class="kbtn" type="button" data-bed="' + b.id + '">진료 차트 열기</button>' +
       '</div></div>' +
@@ -1005,9 +1109,9 @@ function renderChart(){
     '<button class="btn btn-danger" type="button" data-del-bed="' + b.id + '">퇴원 처리</button>' +
     '</div>';
 
-  h += '<h2 class="sec">초음파 계측</h2>';
-  h += '<div class="card"><div class="cc-h">시간당 초음파 발생 횟수</div>' +
-    '<div class="cc-s">최근 7일 · 40~80kHz 대역</div>' + barChartSVG(b.series) +
+  h += '<h2 class="sec">이상 신호 횟수</h2>';
+  h += '<div class="card"><div class="cc-h">하루에 몇 번 신호를 보냈나</div>' +
+    '<div class="cc-s">최근 7일 · 사람이 못 듣는 초음파(40~80kHz)를 셉니다</div>' + barChartSVG(b.series) +
     '<div class="cc-legend">' +
       '<span><i style="background:#2a78d6"></i>정상</span>' +
       '<span><i style="background:#fab219"></i>15회 이상</span>' +
@@ -1017,11 +1121,12 @@ function renderChart(){
 
   h += '<h2 class="sec">진단</h2>';
   h += '<div class="dx s-' + b.status + '" style="margin-bottom:9px">' +
-    '<div class="dl">AI 진단 소견</div>' +
-    '<div class="dv">' + esc(b.dx.title) + ' · <span class="tnum">' + b.dx.prob + '%</span></div>' +
+    '<div class="dl">진단 결과</div>' +
+    '<div class="dv">' + esc(dxPlain(b)) + '</div>' +
+    '<div class="dsub">' + esc(b.dx.title) + ' · 가능성 <span class="tnum">' + b.dx.prob + '%</span></div>' +
     '<div class="dp">' + esc(b.dx.desc) + '</div></div>';
 
-  h += '<div class="rx"><div class="dl">권장 조치</div><div class="dv">' + esc(b.rx) + '</div></div>';
+  h += '<div class="rx"><div class="dl">오늘 할 일</div><div class="dv">' + esc(b.rx) + '</div></div>';
 
   h += '<h2 class="sec">진료 기록</h2><div class="tl">';
   b.log.forEach(function(l){
@@ -1278,6 +1383,14 @@ function syncPlayButtons(){
 function renderSet(){
   var h = '';
 
+  h += '<h2 class="sec">보기</h2>';
+  h += '<div class="set-group"><div class="set-row">' +
+    '<div class="lab"><span>큰 글씨로 보기</span>' +
+      '<span class="sw"><input type="checkbox" id="sw-big"' + (bigText ? ' checked' : '') +
+      ' aria-label="큰 글씨로 보기"><i></i></span></div>' +
+    '<div class="hint">글자와 버튼이 커집니다. 화면이 잘 안 보이면 켜 주세요.</div>' +
+    '</div></div>';
+
   h += '<h2 class="sec">농장 정보</h2>';
   h += '<div class="set-group">' +
     '<div class="set-row"><label class="lab" for="in-farm">농장 이름</label>' +
@@ -1307,9 +1420,9 @@ function renderSet(){
       '<span class="sw"><input type="checkbox" id="sw-push" checked aria-label="앱 푸시 알림 받기"><i></i></span></div></div>' +
     '</div>';
 
-  h += '<h2 class="sec">위험 기준값</h2>';
+  h += '<h2 class="sec">위험 알림 기준</h2>';
   h += '<div class="set-group"><div class="set-row">' +
-    '<label class="lab" for="in-thr"><span>시간당 초음파 발생 횟수</span>' +
+    '<label class="lab" for="in-thr"><span>시간당 몇 회부터 위험으로 볼까요</span>' +
       '<span class="range-val"><span id="thrVal" class="tnum">' + threshold + '</span>회/시간</span></label>' +
     '<input class="" id="in-thr" type="range" min="20" max="60" step="1" value="' + threshold + '" ' +
       'aria-describedby="in-thr-h">' +
@@ -1352,6 +1465,11 @@ function renderSet(){
   $('in-thr').addEventListener('input', function(e){
     threshold = parseInt(e.target.value, 10);
     $('thrVal').textContent = threshold;
+  });
+  $('sw-big').addEventListener('change', function(e){
+    bigText = e.target.checked;
+    $('app').classList.toggle('big', bigText);
+    announce(bigText ? '큰 글씨로 바꿨습니다.' : '기본 글씨로 되돌렸습니다.');
   });
   $('in-farm').addEventListener('input', function(e){
     FARM.name = e.target.value.trim() || '이름 없는 농장';
@@ -1465,10 +1583,10 @@ function openBedSheet(bedId){
     '<input class="inp" id="in-keeper" type="text" maxlength="20" autocomplete="off" ' +
     'value="' + (b ? esc(b.keeper || '') : '') + '" placeholder="예: 김농부">');
 
-  h += field('in-baseline', '평소 초음파 발생량',
+  h += field('in-baseline', '평소 신호 횟수',
     '<div class="unit"><input class="inp tnum" id="in-baseline" type="number" inputmode="numeric" ' +
     'min="0" max="20" value="' + (b ? b.baseline : 3) + '"><span>회 / 시간</span></div>',
-    '이 개체의 평상시 값입니다. “평소의 몇 배”를 계산하는 기준이 됩니다.');
+    '이 개체가 평소에 보내는 횟수입니다. “평소보다 몇 배 많다”를 계산하는 기준이 됩니다.');
 
   openSheet(isNew ? '새 개체 등록' : '개체 정보 수정', h, isNew ? '등록하기' : '저장하기',
     function(){ return saveBed(b); });
@@ -1837,6 +1955,7 @@ document.querySelector('.tabbar').addEventListener('keydown', function(e){
 /* =========================================================
    8. 시작
    ========================================================= */
+beds.forEach(refreshNote);   // 예시 데이터의 보조 문구를 현재 표현으로 통일
 go('ward');
 
 })();
