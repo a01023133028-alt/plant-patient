@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a78d6">
+<meta name="description" content="식물환자 — 작물이 내는 초음파로 스트레스를 조기에 감지하는 스마트팜 조기경보 서비스">
+<title>식물환자 — 작물 초음파 조기경보</title>
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+:root{
+  --blue:#2a78d6; --blue-d:#1c5cab; --blue-100:#cde2fb; --blue-150:#b7d3f6;
+  --good:#0ca30c; --warning:#fab219; --warning-t:#a06b00; --serious:#ec835a; --critical:#d03b3b;
+  --surface:#fcfcfb; --card:#ffffff; --text:#0b0b0b; --text2:#52514e; --muted:#8a8985;
+  --grid:#e5e4e0; --page:#eceae5;
+  --phone:430px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+
+html,body{height:100%}
+body{
+  font-family:Pretendard,'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;
+  background:var(--page); color:var(--text);
+  font-size:14px; line-height:1.5;
+  display:flex; justify-content:center;
+}
+button,input,select{font-family:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ===== 앱 셸 ===== */
+.app{
+  width:100%; max-width:var(--phone); min-height:100dvh; height:100dvh;
+  background:var(--surface); display:flex; flex-direction:column;
+  position:relative; overflow:hidden;
+  border-left:1px solid var(--grid); border-right:1px solid var(--grid);
+}
+@media (min-width:640px){
+  body{padding:24px 0}
+  .app{height:calc(100dvh - 48px); min-height:640px; border-radius:22px;
+       border:1px solid var(--grid); box-shadow:0 14px 40px rgba(0,0,0,.13); overflow:hidden}
+}
+
+/* ===== 앱바 ===== */
+.appbar{
+  padding:14px 18px 13px; border-bottom:1px solid var(--grid);
+  background:var(--card); flex:0 0 auto; z-index:5;
+  padding-top:max(14px, env(safe-area-inset-top));
+}
+.brand{display:flex;align-items:center;gap:9px}
+.logo{width:28px;height:28px;border-radius:9px;background:var(--blue);position:relative;flex:0 0 auto}
+.logo::before{content:"";position:absolute;left:6.5px;top:13px;width:15px;height:2.5px;background:#fff;border-radius:2px}
+.logo::after{content:"";position:absolute;left:12.75px;top:6.5px;width:2.5px;height:15px;background:#fff;border-radius:2px}
+.brand h1{font-size:17.5px;font-weight:800;letter-spacing:-.4px}
+.brand .en{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.2px}
+.appbar .loc{font-size:12px;color:var(--text2);margin-top:6px;padding-left:37px}
+.appbar .back{
+  display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;
+  color:var(--blue);min-height:30px;margin:-4px 0 2px -6px;padding:0 6px;border-radius:8px
+}
+
+/* ===== 본문 ===== */
+.screens{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.screen{padding:16px 16px 26px;animation:fade .22s ease}
+.screen[hidden]{display:none}
+@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+.sec{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.4px;margin:18px 0 8px}
+.sec:first-child{margin-top:2px}
+
+/* ===== 상태 요약 타일 ===== */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.tile{background:var(--card);border:1px solid var(--grid);border-radius:13px;padding:13px 8px;text-align:center}
+.tile .n{font-size:27px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+.tile .l{font-size:12px;color:var(--text2);margin-top:5px;font-weight:700}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:1px}
+
+/* ===== 배지 ===== */
+.badge{
+  font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:999px;color:#fff;
+  letter-spacing:.2px;flex:0 0 auto;line-height:1.35
+}
+.b-good{background:var(--good)} .b-warn{background:var(--warning-t)} .b-crit{background:var(--critical)}
+
+/* ===== 베드 카드 ===== */
+.bed{
+  width:100%;text-align:left;background:var(--card);border:1px solid var(--grid);border-radius:14px;
+  padding:13px;margin-bottom:9px;display:flex;align-items:center;gap:12px;min-height:68px;
+  transition:border-color .5s ease, background-color .5s ease, box-shadow .18s ease
+}
+.bed:active{box-shadow:0 0 0 3px var(--blue-100)}
+.bed.s-crit{border-color:var(--critical);border-width:1.5px;background:#fdf6f6;padding:12.5px}
+.bed.s-warn{border-color:#e7cd93;background:#fdfaf2}
+.bedno{
+  width:44px;height:44px;border-radius:12px;background:var(--blue-100);color:var(--blue-d);
+  font-size:13.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+  transition:background-color .5s ease,color .5s ease;font-variant-numeric:tabular-nums
+}
+.bed.s-crit .bedno{background:#f8dede;color:var(--critical)}
+.bed.s-warn .bedno{background:#f6e9cc;color:var(--warning-t)}
+.bedinfo{flex:1;min-width:0}
+.bedinfo .t{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+.bedinfo .s{font-size:12px;color:var(--text2);margin-top:4px}
+.spark{flex:0 0 auto}
+.restnote{
+  font-size:12px;color:var(--text2);background:var(--card);border:1px dashed var(--grid);
+  border-radius:12px;padding:12px 13px;display:flex;align-items:center;gap:8px
+}
+
+/* ===== 카카오톡 목업 ===== */
+.kakao{background:#b2c7d9;border-radius:16px;padding:13px 12px}
+.ktop{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.ktop b{font-size:12px;color:#2b2b2b;font-weight:700}
+.kprof{width:22px;height:22px;border-radius:8px;background:#fee500;flex:0 0 auto}
+.kbub{background:#fff;border-radius:4px 15px 15px 15px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.khead{background:var(--critical);color:#fff;padding:10px 14px;font-size:12.5px;font-weight:800}
+.kbody{padding:14px}
+.kbody .kt{font-size:14px;font-weight:800;margin-bottom:10px;line-height:1.45}
+.kbody .kp{font-size:12.5px;color:var(--text2);line-height:1.7}
+.kbody .kp b{color:var(--text);font-weight:700}
+.kbtn{
+  display:block;width:100%;margin-top:13px;background:var(--blue);color:#fff;text-align:center;
+  padding:13px;border-radius:10px;font-size:13.5px;font-weight:800;min-height:44px
+}
+.kbtn:active{background:var(--blue-d)}
+.ktime{font-size:11.5px;color:#40525f;margin-top:7px;padding-left:2px}
+
+/* ===== 푸시 기록 ===== */
+.push{
+  background:var(--card);border:1px solid var(--grid);border-radius:14px;
+  padding:12px;display:flex;gap:11px;align-items:flex-start;margin-bottom:9px
+}
+.push.isnew{border-color:var(--critical);background:#fdf6f6}
+.pi{width:31px;height:31px;border-radius:9px;background:var(--blue);flex:0 0 auto;position:relative}
+.pi::before{content:"";position:absolute;left:7px;top:14.75px;width:17px;height:2.5px;background:#fff;border-radius:2px}
+.pi::after{content:"";position:absolute;left:14.25px;top:7px;width:2.5px;height:17px;background:#fff;border-radius:2px}
+.push .pt{font-size:13px;font-weight:800}
+.push .pb{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.5}
+.push .tm{font-size:11.5px;color:var(--muted);margin-left:auto;flex:0 0 auto;padding-left:6px}
+
+/* ===== 진료 차트 ===== */
+.patient{
+  background:var(--card);border:1px solid var(--grid);border-radius:14px;padding:13px;
+  display:flex;gap:13px;align-items:center
+}
+.patient.s-crit{border-color:var(--critical);border-width:1.5px;background:#fdf6f6;padding:12.5px}
+.pav{
+  width:50px;height:50px;border-radius:13px;background:var(--blue-100);display:flex;
+  align-items:center;justify-content:center;font-size:25px;flex:0 0 auto
+}
+.patient.s-crit .pav{background:#f8dede}
+.patient.s-warn .pav{background:#f6e9cc}
+.pn{font-size:16px;font-weight:800;display:flex;align-items:center;gap:7px}
+.pd{font-size:12px;color:var(--text2);margin-top:5px;line-height:1.55}
+
+.card{background:var(--card);border:1px solid var(--grid);border-radius:14px;padding:13px}
+.cc-h{font-size:13.5px;font-weight:800}
+.cc-s{font-size:12px;color:var(--muted);margin-top:3px;margin-bottom:12px}
+.cc-legend{
+  display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;padding-top:11px;
+  border-top:1px solid var(--grid);font-size:11.5px;color:var(--text2)
+}
+.cc-legend i{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:4px;vertical-align:0}
+
+.dx{border-radius:14px;padding:13px;border:1.5px solid var(--critical);background:#fdf6f6}
+.dx.s-good{border-color:var(--good);background:#f4faf4}
+.dx.s-warn{border-color:var(--warning-t);background:#fdfaf2}
+.dl{font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--critical)}
+.dx.s-good .dl{color:var(--good)} .dx.s-warn .dl{color:var(--warning-t)}
+.dv{font-size:17px;font-weight:800;margin-top:6px;letter-spacing:-.3px}
+.dp{font-size:12.5px;color:var(--text2);margin-top:7px;line-height:1.6}
+.rx{background:var(--blue-100);border-radius:14px;padding:13px}
+.rx .dl{color:var(--blue-d)}
+.rx .dv{font-size:15px;color:var(--blue-d)}
+
+.tl{position:relative;padding-left:17px}
+.tl::before{content:"";position:absolute;left:4px;top:6px;bottom:8px;width:1.5px;background:var(--grid)}
+.tli{position:relative;padding-bottom:13px}
+.tli:last-child{padding-bottom:0}
+.tli::before{
+  content:"";position:absolute;left:-17px;top:4px;width:10px;height:10px;border-radius:50%;
+  background:var(--surface);border:2.5px solid var(--blue)
+}
+.tli.crit::before{border-color:var(--critical)}
+.tli .d{font-size:12px;color:var(--muted);font-weight:700}
+.tli .x{font-size:13px;margin-top:3px;line-height:1.5}
+
+.evidence{
+  background:var(--card);border:1px solid var(--grid);border-radius:14px;padding:13px;
+  font-size:12px;color:var(--text2);line-height:1.65
+}
+.evidence b{color:var(--text);font-weight:700}
+.evidence .src{font-size:11.5px;color:var(--muted);margin-top:8px;padding-top:9px;border-top:1px solid var(--grid)}
+
+/* ===== 설정 ===== */
+.set-group{background:var(--card);border:1px solid var(--grid);border-radius:14px;overflow:hidden}
+.set-row{padding:14px 13px;border-bottom:1px solid var(--grid)}
+.set-row:last-child{border-bottom:0}
+.set-row .lab{font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.set-row .hint{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.6}
+.inp{
+  width:100%;min-width:0;margin-top:9px;padding:11px 12px;border:1px solid var(--grid);border-radius:10px;
+  background:var(--surface);font-size:14px;min-height:44px;font-variant-numeric:tabular-nums
+}
+.inp:focus{outline:2px solid var(--blue);outline-offset:-1px;background:var(--card)}
+.times{display:grid;grid-template-columns:1fr auto;gap:9px 8px;align-items:center;margin-top:9px}
+.times .inp{margin-top:0;min-width:0}
+.times span{font-size:12.5px;color:var(--text2);white-space:nowrap}
+
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:34px;background:transparent;margin-top:4px
+}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--grid)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--grid)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--blue);
+  border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.28);margin-top:-10px
+}
+input[type=range]::-moz-range-thumb{
+  width:20px;height:20px;border-radius:50%;background:var(--blue);border:3px solid #fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.28)
+}
+input[type=range]:focus-visible{outline:2px solid var(--blue);outline-offset:4px;border-radius:8px}
+.range-val{font-size:14px;font-weight:800;color:var(--blue-d);font-variant-numeric:tabular-nums}
+.range-ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:-4px}
+
+.sw{position:relative;width:48px;height:29px;flex:0 0 auto}
+.sw input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer}
+.sw i{
+  position:absolute;inset:0;border-radius:999px;background:#cfcec9;transition:background-color .2s ease;
+  pointer-events:none
+}
+.sw i::after{
+  content:"";position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.28);transition:transform .2s ease
+}
+.sw input:checked + i{background:var(--blue)}
+.sw input:checked + i::after{transform:translateX(19px)}
+.sw input:focus-visible + i{outline:2px solid var(--blue);outline-offset:3px}
+
+.demo-box{border:1.5px solid var(--blue);background:#f3f8fe;border-radius:14px;padding:14px}
+.demo-box .dh{font-size:13.5px;font-weight:800;color:var(--blue-d)}
+.demo-box .dq{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6}
+.btn{
+  display:block;width:100%;min-height:48px;border-radius:11px;font-size:14.5px;font-weight:800;
+  padding:13px;margin-top:11px;transition:background-color .15s ease,opacity .15s ease
+}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:active{background:var(--blue-d)}
+.btn-ghost{background:var(--card);color:var(--text2);border:1px solid var(--grid)}
+.btn-ghost:active{background:var(--page)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.demo-steps{margin-top:12px;font-size:12px;color:var(--text2);line-height:1.9;padding-left:2px}
+.demo-steps li{list-style:none;display:flex;gap:8px;align-items:flex-start}
+.demo-steps li .k{
+  width:17px;height:17px;border-radius:50%;background:var(--grid);color:var(--muted);flex:0 0 auto;
+  font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:5px;
+  transition:background-color .3s ease,color .3s ease
+}
+.demo-steps li.on .k{background:var(--blue);color:#fff}
+.demo-steps li.on{color:var(--text);font-weight:600}
+
+.foot{margin-top:20px;font-size:11.5px;color:var(--muted);line-height:1.75;text-align:center}
+
+/* ===== 탭바 ===== */
+.tabbar{
+  flex:0 0 auto;border-top:1px solid var(--grid);background:var(--card);display:flex;
+  padding-bottom:env(safe-area-inset-bottom)
+}
+.tab{
+  flex:1;min-height:58px;padding:8px 0 9px;font-size:11px;font-weight:700;color:var(--muted);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;position:relative
+}
+.tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-selected="true"]{color:var(--blue)}
+.tab .nbadge{
+  position:absolute;top:6px;left:calc(50% + 7px);min-width:18px;height:18px;padding:0 5px;
+  border-radius:999px;background:var(--critical);color:#fff;font-size:10.5px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;
+  border:2px solid var(--card)
+}
+.tab .nbadge[hidden]{display:none}
+
+/* ===== 푸시 배너 ===== */
+.banner{
+  position:absolute;top:0;left:0;right:0;z-index:40;padding:10px 12px;
+  padding-top:max(10px, env(safe-area-inset-top));
+  transform:translateY(-130%);transition:transform .45s cubic-bezier(.2,.9,.3,1.1)
+}
+.banner.show{transform:translateY(0)}
+.banner-in{
+  background:rgba(255,255,255,.97);backdrop-filter:blur(6px);
+  border:1.5px solid var(--critical);border-radius:16px;padding:12px;
+  display:flex;gap:11px;align-items:flex-start;box-shadow:0 8px 26px rgba(0,0,0,.2);
+  width:100%;text-align:left
+}
+.banner .pt{font-size:13.5px;font-weight:800;color:var(--critical)}
+.banner .pb{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.5}
+.banner .tm{font-size:11.5px;color:var(--muted);margin-left:auto;flex:0 0 auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001s !important;transition-duration:.001s !important}
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- 푸시 배너 -->
+  <div class="banner" id="banner">
+    <button class="banner-in" id="bannerBtn" type="button">
+      <span class="pi" aria-hidden="true"></span>
+      <span>
+        <span class="pt" id="bannerT">알림</span>
+        <span class="pb" id="bannerB"></span>
+      </span>
+      <span class="tm">지금</span>
+    </button>
+  </div>
+
+  <!-- 앱바 -->
+  <header class="appbar" id="appbar"></header>
+
+  <!-- 화면 -->
+  <div class="screens" id="screens">
+    <section class="screen" id="sc-ward"  role="tabpanel" aria-labelledby="tab-ward"></section>
+    <section class="screen" id="sc-alert" role="tabpanel" aria-labelledby="tab-alert" hidden></section>
+    <section class="screen" id="sc-chart" role="tabpanel" aria-labelledby="tab-chart" hidden></section>
+    <section class="screen" id="sc-set"   role="tabpanel" aria-labelledby="tab-set"   hidden></section>
+  </div>
+
+  <!-- 탭바 -->
+  <nav class="tabbar" role="tablist" aria-label="주요 화면">
+    <button class="tab" id="tab-ward" role="tab" aria-selected="true" aria-controls="sc-ward" data-tab="ward">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20V9m0 5h18m0 6v-6.5A2.5 2.5 0 0 0 18.5 11H11v9"/><circle cx="7" cy="10" r="1.9"/></svg>
+      병동
+    </button>
+    <button class="tab" id="tab-alert" role="tab" aria-selected="false" aria-controls="sc-alert" data-tab="alert">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10a6 6 0 1 1 12 0c0 3.6 1.2 5 1.8 5.6H4.2C4.8 15 6 13.6 6 10Z"/><path d="M10 19.2a2.2 2.2 0 0 0 4 0"/></svg>
+      알림
+      <span class="nbadge" id="navBadge" hidden>0</span>
+    </button>
+    <button class="tab" id="tab-chart" role="tab" aria-selected="false" aria-controls="sc-chart" data-tab="chart">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18"/><path d="M6.5 20v-5"/><path d="M12 20V8"/><path d="M17.5 20v-9"/></svg>
+      차트
+    </button>
+    <button class="tab" id="tab-set" role="tab" aria-selected="false" aria-controls="sc-set" data-tab="set">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h9m4 0h5M3 16h5m4 0h9"/><circle cx="14.5" cy="8" r="2.4"/><circle cx="9.5" cy="16" r="2.4"/></svg>
+      설정
+    </button>
+  </nav>
+
+  <p class="sr" id="live" role="status" aria-live="polite"></p>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* =========================================================
+   1. 데이터 (더미 · 하드코딩)
+   ========================================================= */
+
+var FARM = { name:'연암대학교 스마트팜 1동', totalPlants:22, hiddenNormal:16 };
+
+var ST = {
+  good:{ key:'good', label:'정상', badge:'b-good', line:'#0ca30c', color:'var(--good)'   },
+  warn:{ key:'warn', label:'주의', badge:'b-warn', line:'#a06b00', color:'var(--warning-t)' },
+  crit:{ key:'crit', label:'위험', badge:'b-crit', line:'#d03b3b', color:'var(--critical)'  }
+};
+var RANK = { crit:0, warn:1, good:2 };
+
+var INITIAL_BEDS = [
+  {
+    id:'A-3', crop:'토마토', emoji:'🍅', status:'crit',
+    hourly:42, baseline:4, series:[3,4,5,8,15,26,42],
+    chartNo:'2026-0413', variety:'대프니스', planted:'2026.04.13', day:121, keeper:'김농부',
+    note:'평소의 10배',
+    dx:{ title:'수분 스트레스 의심', prob:87,
+         desc:'3일 전부터 증가, 어제 급증. 육안 증상은 2~3일 뒤 예상됩니다.' },
+    rx:'오늘 중 관수 · 배지 함수율 점검',
+    log:[
+      { t:'오늘 09:41', x:'위험 단계 진입 (42회/시간)', crit:true },
+      { t:'어제 14:20', x:'주의 단계 · 알림 발송' },
+      { t:'8월 9일 06:00', x:'정기 점검 · 이상 없음' }
+    ]
+  },
+  {
+    id:'B-1', crop:'토마토', emoji:'🍅', status:'warn',
+    hourly:14, baseline:4, series:[2,3,3,5,7,10,14],
+    chartNo:'2026-0413', variety:'대프니스', planted:'2026.04.13', day:121, keeper:'김농부',
+    note:'관찰 필요',
+    dx:{ title:'초기 수분 스트레스 가능', prob:41,
+         desc:'이틀째 완만하게 증가 중입니다. 아직 위험 기준 아래이나 추세를 지켜봐야 합니다.' },
+    rx:'내일 오전 재확인 · 급액량 기록 확인',
+    log:[
+      { t:'어제 14:20', x:'주의 단계 진입 (12회/시간)' },
+      { t:'8월 9일 06:00', x:'정기 점검 · 이상 없음' }
+    ]
+  },
+  {
+    id:'B-3', crop:'오이', emoji:'🥒', status:'warn',
+    hourly:12, baseline:3, series:[2,2,3,4,6,9,12],
+    chartNo:'2026-0502', variety:'백다다기', planted:'2026.05.02', day:102, keeper:'이영농',
+    note:'관찰 필요',
+    dx:{ title:'초기 수분 스트레스 가능', prob:36,
+         desc:'오후 시간대에만 신호가 몰립니다. 일사량 대비 급액 타이밍 점검이 필요합니다.' },
+    rx:'오후 급액 타이밍 조정 검토',
+    log:[
+      { t:'오늘 07:10', x:'주의 단계 진입 (11회/시간)' },
+      { t:'8월 9일 06:00', x:'정기 점검 · 이상 없음' }
+    ]
+  },
+  {
+    id:'C-2', crop:'토마토', emoji:'🍅', status:'warn',
+    hourly:11, baseline:4, series:[3,3,4,5,7,9,11],
+    chartNo:'2026-0413', variety:'대프니스', planted:'2026.04.13', day:121, keeper:'이영농',
+    note:'관찰 필요',
+    dx:{ title:'경미한 신호 증가', prob:28,
+         desc:'증가 폭이 작아 정상 변동 범위와 겹칩니다. 하루 더 관찰을 권장합니다.' },
+    rx:'경과 관찰 · 조치 불필요',
+    log:[ { t:'오늘 05:40', x:'주의 단계 진입 (11회/시간)' } ]
+  },
+  {
+    id:'B-2', crop:'파프리카', emoji:'🫑', status:'good',
+    hourly:3, baseline:3, series:[3,2,3,2,3,2,3],
+    chartNo:'2026-0421', variety:'시로코', planted:'2026.04.21', day:113, keeper:'김농부',
+    note:'안정',
+    dx:{ title:'이상 없음', prob:6,
+         desc:'7일간 정상 범위를 유지하고 있습니다. 초음파 발생이 배경 수준입니다.' },
+    rx:'현재 관리 유지',
+    log:[
+      { t:'오늘 06:00', x:'야간 정기 점검 · 이상 없음' },
+      { t:'8월 9일 06:00', x:'정기 점검 · 이상 없음' }
+    ]
+  },
+  {
+    id:'C-1', crop:'딸기', emoji:'🍓', status:'good',
+    hourly:2, baseline:2, series:[2,2,1,2,2,1,2],
+    chartNo:'2026-0508', variety:'설향', planted:'2026.05.08', day:96, keeper:'이영농',
+    note:'안정',
+    dx:{ title:'이상 없음', prob:4,
+         desc:'7일간 정상 범위를 유지하고 있습니다.' },
+    rx:'현재 관리 유지',
+    log:[ { t:'오늘 06:00', x:'야간 정기 점검 · 이상 없음' } ]
+  }
+];
+
+var INITIAL_PUSH = [
+  { t:'A-3 위험 단계 진입', b:'초음파 42회/시간 감지', tm:'방금',       bed:'A-3', isnew:false },
+  { t:'B-1 주의 단계',      b:'초음파 14회/시간, 증가 추세', tm:'1시간 전', bed:'B-1', isnew:false },
+  { t:'야간 정기 점검 완료', b:'22개체 중 21개체 정상',      tm:'오늘 06:00', bed:null,  isnew:false }
+];
+
+/* 상태 (localStorage 미사용 — 자바스크립트 변수로만 관리) */
+var beds     = clone(INITIAL_BEDS);
+var pushLog  = clone(INITIAL_PUSH);
+var kakaoBedId = 'A-3';
+var current  = 'ward';
+var selected = 'A-3';
+var threshold = 30;
+var unread   = 0;
+var demoOn   = false, demoStep = 0, rafId = null, timers = [];
+
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function bedById(id){ for(var i=0;i<beds.length;i++){ if(beds[i].id===id) return beds[i]; } return beds[0]; }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+  return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+function $(id){ return document.getElementById(id); }
+
+function counts(){
+  var c = { good:FARM.hiddenNormal, warn:0, crit:0 };
+  beds.forEach(function(b){ c[b.status]++; });
+  return c;
+}
+function sortedBeds(){
+  return beds.slice().sort(function(a,b){
+    if(RANK[a.status] !== RANK[b.status]) return RANK[a.status] - RANK[b.status];
+    return b.hourly - a.hourly;
+  });
+}
+
+/* =========================================================
+   2. SVG 그리기 (외부 차트 라이브러리 없이 직접 생성)
+   ========================================================= */
+
+function sparkPoints(series){
+  var W = 56, H = 28, PAD = 3;
+  var max = Math.max(threshold, Math.max.apply(null, series), 1);
+  var n = series.length;
+  var pts = [];
+  for(var i=0;i<n;i++){
+    var x = PAD + (W - PAD*2) * (i/(n-1));
+    var y = (H - PAD) - (H - PAD*2) * (series[i]/max);
+    pts.push(x.toFixed(1) + ',' + y.toFixed(1));
+  }
+  return pts.join(' ');
+}
+
+function sparkSVG(bed){
+  return '<svg class="spark" width="56" height="28" viewBox="0 0 56 28" aria-hidden="true">' +
+    '<polyline data-spark="' + bed.id + '" points="' + sparkPoints(bed.series) + '" fill="none" ' +
+    'stroke="' + ST[bed.status].line + '" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+
+function barColor(v){
+  if(v >= threshold) return '#d03b3b';
+  if(v >= 25) return '#ec835a';
+  if(v >= 15) return '#fab219';
+  return '#2a78d6';
+}
+
+function barChartSVG(series){
+  var W = 300, BASE = 112, TOP = 26;
+  var maxVal = Math.max.apply(null, series.concat([threshold]));
+  var scale  = maxVal * 1.18;
+  function y(v){ return BASE - (v/scale) * (BASE - TOP); }
+
+  /* preserveAspectRatio 기본값 유지 — 글자가 가로로 늘어나지 않도록 */
+  var s = '<svg viewBox="0 0 300 140" style="display:block;width:100%;height:auto" role="img" ' +
+          'aria-label="최근 7일 시간당 초음파 발생 횟수 막대그래프. ' + series.join(', ') + '회.">';
+
+  var ty = y(threshold);
+  s += '<text x="2" y="' + (ty - 6).toFixed(1) + '" font-size="11" fill="#d03b3b" font-weight="700">' +
+       '위험 기준 ' + threshold + '회</text>';
+  s += '<line x1="0" y1="' + ty.toFixed(1) + '" x2="300" y2="' + ty.toFixed(1) +
+       '" stroke="#d03b3b" stroke-width="1.4" stroke-dasharray="5 4"/>';
+  s += '<line x1="0" y1="' + BASE + '" x2="300" y2="' + BASE + '" stroke="#e5e4e0" stroke-width="1"/>';
+
+  for(var i=0;i<series.length;i++){
+    var v = series[i], x = 8 + i*41, top = y(v), h = Math.max(4, BASE - top);
+    s += '<rect x="' + x + '" y="' + (BASE-h).toFixed(1) + '" width="26" height="' + h.toFixed(1) +
+         '" rx="4" fill="' + barColor(v) + '"/>';
+  }
+
+  var last = series[series.length-1];
+  s += '<text x="267" y="' + (y(last) - 7).toFixed(1) + '" font-size="12.5" fill="#0b0b0b" ' +
+       'text-anchor="middle" font-weight="800">' + last + '</text>';
+
+  var labels = ['6일 전','','4일 전','','2일 전','','오늘'];
+  for(var j=0;j<labels.length;j++){
+    if(!labels[j]) continue;
+    s += '<text x="' + (8 + j*41 + 13) + '" y="129" font-size="11" fill="#8a8985" ' +
+         'text-anchor="middle"' + (j===6 ? ' font-weight="700" fill="#52514e"' : '') + '>' + labels[j] + '</text>';
+  }
+  return s + '</svg>';
+}
+
+/* =========================================================
+   3. 화면 렌더링
+   ========================================================= */
+
+var APPBAR = {
+  ward:  function(){ return head('식물환자', 'PlantChart', FARM.name + ' · ' + FARM.totalPlants + '개체 진료 중'); },
+  alert: function(){ return head('알림', '', '이상 신호가 감지되면 즉시 전송됩니다'); },
+  chart: function(){
+    var b = bedById(selected);
+    return '<button class="back" type="button" data-goto="ward">' +
+           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+           'stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+           '<path d="M15 5l-7 7 7 7"/></svg>병동으로</button>' +
+           head('진료 차트', '', b.id + ' 베드 · 차트번호 ' + b.chartNo);
+  },
+  set:   function(){ return head('설정', '', '알림 대상과 기준을 조정합니다'); }
+};
+
+function head(title, en, sub){
+  return '<div class="brand"><div class="logo" aria-hidden="true"></div>' +
+         '<h1>' + esc(title) + '</h1>' +
+         (en ? '<span class="en">' + esc(en) + '</span>' : '') + '</div>' +
+         '<div class="loc">' + esc(sub) + '</div>';
+}
+
+/* --- 1. 병동 --- */
+function renderWard(){
+  var c = counts(), list = sortedBeds(), h = '';
+
+  h += '<div class="tiles">' +
+       tile(c.good, '정상', 'var(--good)',      'var(--good)') +
+       tile(c.warn, '주의', 'var(--warning-t)', 'var(--warning)') +
+       tile(c.crit, '위험', 'var(--critical)',  'var(--critical)') +
+       '</div>';
+
+  h += '<h2 class="sec">오늘의 진료 대기</h2>';
+  list.forEach(function(b){ h += bedCard(b); });
+
+  h += '<div class="restnote"><span class="dot" style="background:var(--good)"></span>' +
+       '나머지 ' + FARM.hiddenNormal + '개체는 모두 <b>정상</b>입니다</div>';
+
+  $('sc-ward').innerHTML = h;
+}
+
+function tile(n, label, numColor, dotColor){
+  return '<div class="tile"><div class="n" style="color:' + numColor + '">' + n + '</div>' +
+         '<div class="l"><span class="dot" style="background:' + dotColor + '"></span>' + label + '</div></div>';
+}
+
+function bedCard(b){
+  var st = ST[b.status];
+  return '<button class="bed s-' + b.status + '" type="button" data-bed="' + b.id + '" ' +
+    'aria-label="' + b.id + ' 베드 ' + b.crop + ', ' + st.label + ', 최근 1시간 ' + b.hourly + '회. 진료 차트 열기">' +
+    '<span class="bedno">' + b.id + '</span>' +
+    '<span class="bedinfo">' +
+      '<span class="t">' + b.crop + ' <span class="badge ' + st.badge + '">' + st.label + '</span></span>' +
+      '<span class="s"><span class="tnum" data-hourly="' + b.id + '">최근 1시간 ' + b.hourly + '회</span>' +
+      ' · <span data-note="' + b.id + '">' + esc(b.note) + '</span></span>' +
+    '</span>' + sparkSVG(b) + '</button>';
+}
+
+/* 데모 중 카드 부분 갱신 (전체 리렌더 없이)
+   주의: data-bed는 배너·알림 목록에도 붙으므로 반드시 병동 화면 안에서만 찾는다 */
+function patchBed(b){
+  var st = ST[b.status];
+  var ward = $('sc-ward');
+  var card = ward.querySelector('[data-bed="' + b.id + '"]');
+  if(card){
+    card.className = 'bed s-' + b.status;
+    card.setAttribute('aria-label', b.id + ' 베드 ' + b.crop + ', ' + st.label +
+      ', 최근 1시간 ' + b.hourly + '회. 진료 차트 열기');
+    var badge = card.querySelector('.badge');
+    if(badge){ badge.className = 'badge ' + st.badge; badge.textContent = st.label; }
+    var hv = card.querySelector('[data-hourly="' + b.id + '"]');
+    if(hv) hv.textContent = '최근 1시간 ' + b.hourly + '회';
+    var nt = card.querySelector('[data-note="' + b.id + '"]');
+    if(nt) nt.textContent = b.note;
+  }
+  var poly = ward.querySelector('[data-spark="' + b.id + '"]');
+  if(poly){
+    poly.setAttribute('points', sparkPoints(b.series));
+    poly.setAttribute('stroke', st.line);
+  }
+  var c = counts(), tiles = ward.querySelectorAll('.tile .n');
+  if(tiles.length === 3){ tiles[0].textContent = c.good; tiles[1].textContent = c.warn; tiles[2].textContent = c.crit; }
+}
+
+/* --- 2. 알림 --- */
+function renderAlert(){
+  var b = bedById(kakaoBedId), st = ST[b.status], h = '';
+
+  h += '<h2 class="sec">카카오톡 알림톡</h2>';
+  h += '<div class="kakao"><div class="ktop"><span class="kprof" aria-hidden="true"></span><b>식물환자 알림</b></div>' +
+    '<div class="kbub">' +
+      '<div class="khead">긴급 · 수분 스트레스 감지</div>' +
+      '<div class="kbody">' +
+        '<div class="kt">' + b.id + ' 베드 ' + b.crop + '가<br>이상 신호를 보내고 있습니다</div>' +
+        '<div class="kp">' +
+          '최근 1시간 초음파 <b class="tnum">' + b.hourly + '회</b> (평소 ' + b.baseline + '회)<br>' +
+          '수분 스트레스 가능성 <b class="tnum">' + b.dx.prob + '%</b><br>' +
+          '육안 증상 예상 시점 <b>2~3일 후</b>' +
+        '</div>' +
+        '<button class="kbtn" type="button" data-bed="' + b.id + '">진료 차트 열기</button>' +
+      '</div></div>' +
+    '<div class="ktime">오늘 09:41 · 수신됨</div></div>';
+
+  h += '<h2 class="sec">앱 푸시 기록</h2>';
+  pushLog.forEach(function(p){
+    h += '<' + (p.bed ? 'button class="push' + (p.isnew?' isnew':'') + '" type="button" data-bed="' + p.bed + '"'
+                      : 'div class="push"') + ' style="width:100%;text-align:left">' +
+      '<span class="pi" aria-hidden="true"></span><span>' +
+      '<span class="pt" style="display:block">' + esc(p.t) + '</span>' +
+      '<span class="pb" style="display:block">' + esc(p.b) + '</span></span>' +
+      '<span class="tm">' + esc(p.tm) + '</span>' +
+      '</' + (p.bed ? 'button' : 'div') + '>';
+  });
+
+  h += '<h2 class="sec">알림 기준</h2>';
+  h += '<div class="evidence">시간당 초음파 발생 횟수가 <b class="tnum">' + threshold + '회</b>를 넘으면 ' +
+       '<b>위험</b>, 그 절반을 넘으면 <b>주의</b> 단계로 분류해 알림을 보냅니다. ' +
+       '기준값은 설정 화면에서 조정할 수 있습니다.</div>';
+
+  $('sc-alert').innerHTML = h;
+  if(st){ /* 상태값 참조 유지 */ }
+}
+
+/* --- 3. 진료 차트 --- */
+function renderChart(){
+  var b = bedById(selected), st = ST[b.status], h = '';
+
+  h += '<div class="patient s-' + b.status + '">' +
+    '<div class="pav" aria-hidden="true">' + b.emoji + '</div>' +
+    '<div><div class="pn">' + b.crop + ' <span class="badge ' + st.badge + '">' + st.label + '</span></div>' +
+    '<div class="pd">품종 ' + esc(b.variety) + ' · 정식 ' + b.planted + '<br>' +
+    '재배 ' + b.day + '일차 · 담당 ' + esc(b.keeper) + '</div></div></div>';
+
+  h += '<h2 class="sec">초음파 계측</h2>';
+  h += '<div class="card"><div class="cc-h">시간당 초음파 발생 횟수</div>' +
+    '<div class="cc-s">최근 7일 · 40~80kHz 대역</div>' + barChartSVG(b.series) +
+    '<div class="cc-legend">' +
+      '<span><i style="background:#2a78d6"></i>정상</span>' +
+      '<span><i style="background:#fab219"></i>15회 이상</span>' +
+      '<span><i style="background:#ec835a"></i>25회 이상</span>' +
+      '<span><i style="background:#d03b3b"></i>' + threshold + '회 이상 · 위험</span>' +
+    '</div></div>';
+
+  h += '<h2 class="sec">진단</h2>';
+  h += '<div class="dx s-' + b.status + '" style="margin-bottom:9px">' +
+    '<div class="dl">AI 진단 소견</div>' +
+    '<div class="dv">' + esc(b.dx.title) + ' · <span class="tnum">' + b.dx.prob + '%</span></div>' +
+    '<div class="dp">' + esc(b.dx.desc) + '</div></div>';
+
+  h += '<div class="rx"><div class="dl">권장 조치</div><div class="dv">' + esc(b.rx) + '</div></div>';
+
+  h += '<h2 class="sec">진료 기록</h2><div class="tl">';
+  b.log.forEach(function(l){
+    h += '<div class="tli' + (l.crit ? ' crit' : '') + '">' +
+         '<div class="d">' + esc(l.t) + '</div><div class="x">' + esc(l.x) + '</div></div>';
+  });
+  h += '</div>';
+
+  h += '<h2 class="sec">판독 근거</h2>';
+  h += '<div class="evidence">' +
+    '식물은 스트레스를 받으면 <b>40~80kHz</b> 초음파를 방출합니다. 스트레스 상태에서는 ' +
+    '<b>시간당 30~50회</b>, 정상일 때는 거의 발생하지 않습니다. 사람의 가청 한계는 20kHz라 맨귀로는 들을 수 없고, ' +
+    '이 소리는 <b>육안 시듦 증상보다 2~3일 먼저</b> 나타납니다.<br><br>' +
+    '공개 데이터 <b class="tnum">5,477건</b>을 자체 재분석한 결과, 식물 소리는 20kHz 미만 성분이 <b>0.2%</b>인 반면 ' +
+    '온실 배경소음은 <b>18.6%</b>였습니다. 대역 필터만으로 1차 분리가 가능합니다.' +
+    '<div class="src">Khait et al., <i>Cell</i> (2023) — “Sounds emitted by plants under stress are airborne and informative”</div>' +
+    '</div>';
+
+  $('sc-chart').innerHTML = h;
+}
+
+/* --- 4. 설정 --- */
+function renderSet(){
+  var h = '';
+
+  h += '<h2 class="sec">알림 대상</h2>';
+  h += '<div class="set-group">' +
+    '<div class="set-row"><label class="lab" for="in-kakao">알림 받을 카카오톡 번호</label>' +
+      '<input class="inp tnum" id="in-kakao" type="tel" inputmode="numeric" value="010-1234-5678" ' +
+      'autocomplete="off" aria-describedby="in-kakao-h">' +
+      '<div class="hint" id="in-kakao-h">이 번호로 카카오톡 알림톡이 발송됩니다.</div></div>' +
+    '<div class="set-row"><div class="lab"><span>카카오톡 알림톡</span>' +
+      '<span class="sw"><input type="checkbox" id="sw-kakao" checked aria-label="카카오톡 알림톡 받기"><i></i></span></div>' +
+      '<div class="hint">앱을 열지 않아도 알림이 도착합니다.</div></div>' +
+    '<div class="set-row"><div class="lab"><span>앱 푸시 알림</span>' +
+      '<span class="sw"><input type="checkbox" id="sw-push" checked aria-label="앱 푸시 알림 받기"><i></i></span></div></div>' +
+    '</div>';
+
+  h += '<h2 class="sec">위험 기준값</h2>';
+  h += '<div class="set-group"><div class="set-row">' +
+    '<label class="lab" for="in-thr"><span>시간당 초음파 발생 횟수</span>' +
+      '<span class="range-val"><span id="thrVal" class="tnum">' + threshold + '</span>회/시간</span></label>' +
+    '<input class="" id="in-thr" type="range" min="20" max="60" step="1" value="' + threshold + '" ' +
+      'aria-describedby="in-thr-h">' +
+    '<div class="range-ends"><span class="tnum">20</span><span class="tnum">60</span></div>' +
+    '<div class="hint" id="in-thr-h">연구 보고 기준은 시간당 30~50회입니다. 기본값 30회를 권장합니다. ' +
+      '기준을 바꾸면 진료 차트의 빨간 점선이 함께 움직입니다.</div>' +
+    '</div></div>';
+
+  h += '<h2 class="sec">알림 시간대</h2>';
+  h += '<div class="set-group">' +
+    '<div class="set-row"><div class="lab"><span>알림 받을 시간</span></div>' +
+      '<div class="times"><input class="inp" type="time" value="06:00" aria-label="알림 시작 시각">' +
+      '<span>부터</span><input class="inp" type="time" value="22:00" aria-label="알림 종료 시각"><span>까지</span></div></div>' +
+    '<div class="set-row"><div class="lab"><span>위험 단계는 시간과 관계없이 즉시</span>' +
+      '<span class="sw"><input type="checkbox" id="sw-night" checked aria-label="위험 단계 즉시 알림"><i></i></span></div>' +
+      '<div class="hint">야간이라도 위험 단계는 바로 발송합니다.</div></div>' +
+    '</div>';
+
+  h += '<h2 class="sec">시연</h2>';
+  h += '<div class="demo-box">' +
+    '<div class="dh">시연 모드 · 이상 신호 발생시키기</div>' +
+    '<div class="dq">B-2 파프리카에 스트레스 신호가 나타나는 상황을 3초 동안 재현합니다. ' +
+    '실제 계측 없이 화면 동작만 보여주는 발표용 기능입니다.</div>' +
+    '<ul class="demo-steps" id="demoSteps">' +
+      '<li data-step="1"><span class="k">1</span><span>B-2 상태가 정상 → 주의 → 위험으로 바뀝니다</span></li>' +
+      '<li data-step="2"><span class="k">2</span><span>추세 그래프가 위로 치솟습니다</span></li>' +
+      '<li data-step="3"><span class="k">3</span><span>푸시 알림 배너가 내려옵니다</span></li>' +
+      '<li data-step="4"><span class="k">4</span><span>알림 탭에 빨간 뱃지가 붙습니다</span></li>' +
+    '</ul>' +
+    '<button class="btn btn-primary" id="btnDemo" type="button">시연 모드: 이상 신호 발생시키기</button>' +
+    '<button class="btn btn-ghost" id="btnReset" type="button">초기화</button>' +
+    '</div>';
+
+  h += '<p class="foot">식물환자 · PlantChart 프로토타입<br>' +
+       '2026 연암SMART팜 융복합 공모전 출품작<br>화면의 계측값은 시연용 예시 데이터입니다.</p>';
+
+  $('sc-set').innerHTML = h;
+
+  $('in-thr').addEventListener('input', function(e){
+    threshold = parseInt(e.target.value, 10);
+    $('thrVal').textContent = threshold;
+  });
+  $('btnDemo').addEventListener('click', runDemo);
+  $('btnReset').addEventListener('click', resetAll);
+  syncDemoButtons();
+}
+
+function syncDemoButtons(){
+  var d = $('btnDemo');
+  if(d) d.disabled = demoOn;
+  var steps = document.querySelectorAll('#demoSteps li');
+  for(var i=0;i<steps.length;i++){
+    steps[i].classList.toggle('on', parseInt(steps[i].getAttribute('data-step'),10) <= demoStep);
+  }
+}
+
+/* =========================================================
+   4. 탭 전환
+   ========================================================= */
+
+var RENDER = { ward:renderWard, alert:renderAlert, chart:renderChart, set:renderSet };
+
+function go(tab){
+  current = tab;
+  ['ward','alert','chart','set'].forEach(function(t){
+    $('sc-' + t).hidden = (t !== tab);
+    var btn = $('tab-' + t);
+    btn.setAttribute('aria-selected', String(t === tab));
+  });
+  $('appbar').innerHTML = APPBAR[tab]();
+  RENDER[tab]();
+  $('screens').scrollTop = 0;
+  if(tab === 'alert') setUnread(0);
+}
+
+function openChart(bedId){
+  selected = bedId;
+  hideBanner();
+  go('chart');
+  announce(bedId + ' 베드 진료 차트를 열었습니다.');
+}
+
+function setUnread(n){
+  unread = n;
+  var el = $('navBadge');
+  el.textContent = n;
+  el.hidden = (n <= 0);
+}
+
+function announce(msg){ $('live').textContent = msg; }
+
+/* =========================================================
+   5. 푸시 배너
+   ========================================================= */
+
+function showBanner(title, body, bedId){
+  $('bannerT').textContent = title;
+  $('bannerB').textContent = body;
+  $('bannerBtn').setAttribute('data-bed', bedId || '');
+  $('banner').classList.add('show');
+  timers.push(setTimeout(hideBanner, 6500));
+}
+function hideBanner(){ $('banner').classList.remove('show'); }
+
+/* =========================================================
+   6. 시연 모드
+   ========================================================= */
+
+var DEMO_BASE   = [3,2,3,2,3,2,3];
+var DEMO_TARGET = [3,2,3,4,9,21,38];
+
+function tween(dur, onStep, onDone){
+  var start = null;
+  function frame(now){
+    if(start === null) start = now;
+    var p = Math.min(1, (now - start) / dur);
+    onStep(1 - Math.pow(1 - p, 3));
+    if(p < 1){ rafId = requestAnimationFrame(frame); }
+    else { rafId = null; if(onDone) onDone(); }
+  }
+  rafId = requestAnimationFrame(frame);
+}
+
+function applyDemoProgress(p){
+  var b = bedById('B-2');
+  var s = [];
+  for(var i=0;i<DEMO_BASE.length;i++){
+    s.push(Math.round(DEMO_BASE[i] + (DEMO_TARGET[i] - DEMO_BASE[i]) * p));
+  }
+  b.series = s;
+  b.hourly = s[s.length-1];
+  if(current === 'ward') patchBed(b);
+}
+
+function runDemo(){
+  if(demoOn) return;
+  demoOn = true; demoStep = 0;
+  syncDemoButtons();
+
+  var b = bedById('B-2');
+  go('ward');
+  announce('시연을 시작합니다. B-2 파프리카의 신호가 올라갑니다.');
+
+  /* 1단계 (0 ~ 1.1초) — 정상 → 주의 */
+  demoStep = 2; syncDemoButtons();
+  tween(1100, function(p){
+    applyDemoProgress(p * 0.45);
+    var bb = bedById('B-2');
+    if(bb.hourly >= threshold/2 && bb.status === 'good'){
+      bb.status = 'warn'; bb.note = '관찰 필요';
+      demoStep = 1; syncDemoButtons();
+      if(current === 'ward'){ patchBed(bb); }
+    }
+  }, function(){
+
+    /* 2단계 (1.3 ~ 2.4초) — 주의 → 위험 */
+    timers.push(setTimeout(function(){
+      tween(1100, function(p){
+        applyDemoProgress(0.45 + p * 0.55);
+        var bb = bedById('B-2');
+        if(bb.hourly >= threshold && bb.status !== 'crit'){
+          bb.status = 'crit'; bb.note = '평소의 ' + Math.round(bb.hourly / bb.baseline) + '배';
+        }else if(bb.status === 'crit'){
+          bb.note = '평소의 ' + Math.round(bb.hourly / bb.baseline) + '배';
+        }
+        if(current === 'ward') patchBed(bb);
+      }, function(){
+        finishDemo(b);
+      });
+    }, 200));
+  });
+}
+
+function finishDemo(b){
+  var bb = bedById('B-2');
+  bb.status = 'crit';
+  bb.hourly = DEMO_TARGET[DEMO_TARGET.length-1];
+  bb.series = DEMO_TARGET.slice();
+  bb.note = '평소의 ' + Math.round(bb.hourly / bb.baseline) + '배';
+  bb.dx = { title:'수분 스트레스 의심', prob:79,
+            desc:'6시간 전부터 급격히 증가했습니다. 육안 증상은 2~3일 뒤 나타날 것으로 예상됩니다.' };
+  bb.rx = '즉시 관수 밸브 · 배지 함수율 점검';
+  bb.log.unshift({ t:'방금', x:'위험 단계 진입 (' + bb.hourly + '회/시간)', crit:true });
+
+  if(current === 'ward'){ patchBed(bb); renderWard(); }
+
+  /* 3단계 — 푸시 배너 */
+  timers.push(setTimeout(function(){
+    demoStep = 3; syncDemoButtons();
+    showBanner('B-2 위험 단계 진입', '파프리카 · 초음파 ' + bb.hourly + '회/시간 감지', 'B-2');
+
+    /* 4단계 — 알림 뱃지 + 기록 추가 */
+    timers.push(setTimeout(function(){
+      demoStep = 4; syncDemoButtons();
+      pushLog.unshift({ t:'B-2 위험 단계 진입',
+                        b:'초음파 ' + bb.hourly + '회/시간 감지 · 평소 ' + bb.baseline + '회',
+                        tm:'방금', bed:'B-2', isnew:true });
+      kakaoBedId = 'B-2';
+      setUnread(unread + 1);
+      if(current === 'alert') renderAlert();
+      demoOn = false; syncDemoButtons();
+      announce('B-2 파프리카가 위험 단계에 진입했습니다. 알림이 발송되었습니다.');
+    }, 260));
+  }, 180));
+}
+
+function resetAll(){
+  if(rafId){ cancelAnimationFrame(rafId); rafId = null; }
+  timers.forEach(clearTimeout); timers = [];
+
+  beds = clone(INITIAL_BEDS);
+  pushLog = clone(INITIAL_PUSH);
+  kakaoBedId = 'A-3';
+  if(selected === 'B-2') selected = 'A-3';
+  demoOn = false; demoStep = 0;
+
+  hideBanner();
+  setUnread(0);
+  RENDER[current]();
+  syncDemoButtons();
+  announce('초기 상태로 되돌렸습니다.');
+}
+
+/* =========================================================
+   7. 이벤트 (위임)
+   ========================================================= */
+
+document.addEventListener('click', function(e){
+  var tabBtn = e.target.closest('[data-tab]');
+  if(tabBtn){ go(tabBtn.getAttribute('data-tab')); return; }
+
+  var gotoBtn = e.target.closest('[data-goto]');
+  if(gotoBtn){ go(gotoBtn.getAttribute('data-goto')); return; }
+
+  var bedBtn = e.target.closest('[data-bed]');
+  if(bedBtn){
+    var id = bedBtn.getAttribute('data-bed');
+    if(id) openChart(id);
+    return;
+  }
+});
+
+/* 탭바 좌우 방향키 이동 */
+document.querySelector('.tabbar').addEventListener('keydown', function(e){
+  if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var i = tabs.indexOf(document.activeElement);
+  if(i < 0) return;
+  e.preventDefault();
+  var next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+  next.focus();
+  go(next.getAttribute('data-tab'));
+});
+
+/* =========================================================
+   8. 시작
+   ========================================================= */
+go('ward');
+
+})();
+</script>
+</body>
+</html>
