@@ -302,6 +302,68 @@ input[type=range]:focus-visible{outline:2px solid var(--blue);outline-offset:4px
 .banner .tm{font-size:11.5px;color:var(--muted);margin-left:auto;flex:0 0 auto}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
+/* ===== 개체 등록 / 수정 ===== */
+.addbtn{
+  width:100%;min-height:52px;margin-top:4px;border:1.5px dashed var(--blue);border-radius:14px;
+  background:#f3f8fe;color:var(--blue-d);font-size:14px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;gap:7px
+}
+.addbtn:active{background:var(--blue-100)}
+.addbtn .plus{font-size:18px;line-height:1;font-weight:800}
+.rowbtns{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.rowbtns .btn{margin-top:0}
+.btn-danger{background:var(--card);color:var(--critical);border:1px solid #eccaca}
+.btn-danger:active{background:#fdf6f6}
+.empty{
+  background:var(--card);border:1px dashed var(--grid);border-radius:14px;padding:26px 16px;
+  text-align:center;color:var(--text2);font-size:13px;line-height:1.7
+}
+
+/* ===== 입력 시트 ===== */
+.sheet{position:absolute;inset:0;z-index:60;display:flex;align-items:flex-end}
+.sheet[hidden]{display:none}
+.sheet-bg{position:absolute;inset:0;background:rgba(11,11,11,.42);opacity:0;transition:opacity .25s ease}
+.sheet.show .sheet-bg{opacity:1}
+.sheet-panel{
+  position:relative;width:100%;max-height:92%;background:var(--surface);
+  border-radius:20px 20px 0 0;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.9,.3,1);
+  box-shadow:0 -8px 30px rgba(0,0,0,.18)
+}
+.sheet.show .sheet-panel{transform:translateY(0)}
+.sheet-head{
+  padding:15px 16px 13px;border-bottom:1px solid var(--grid);background:var(--card);
+  border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:space-between;gap:12px
+}
+.sheet-head h2{font-size:16px;font-weight:800;letter-spacing:-.3px}
+.sheet-head .x{
+  width:34px;height:34px;border-radius:10px;color:var(--text2);font-size:19px;line-height:1;
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto
+}
+.sheet-head .x:active{background:var(--page)}
+.sheet-body{flex:1;overflow-y:auto;padding:14px 16px 4px}
+.sheet-foot{
+  padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--grid);background:var(--card);display:grid;
+  grid-template-columns:1fr 1.4fr;gap:9px
+}
+.sheet-foot .btn{margin-top:0}
+.fld{margin-bottom:14px}
+.fld > label{font-size:13px;font-weight:700;display:block}
+.fld .req{color:var(--critical);margin-left:3px;font-weight:800}
+.fld .fhint{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.55}
+.fld select.inp{appearance:none;background-image:none}
+.fld .unit{display:flex;align-items:center;gap:9px}
+.fld .unit .inp{margin-top:0}
+.fld .unit span{font-size:13px;color:var(--text2);white-space:nowrap}
+.err{
+  background:#fdf6f6;border:1.5px solid var(--critical);border-radius:12px;padding:11px 12px;
+  font-size:12.5px;color:var(--critical);font-weight:700;margin-bottom:14px;line-height:1.55
+}
+.err[hidden]{display:none}
+.confirm-msg{font-size:13.5px;line-height:1.7;color:var(--text2);margin-bottom:6px}
+.confirm-msg b{color:var(--text)}
+
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001s !important;transition-duration:.001s !important}
 }
@@ -321,6 +383,22 @@ input[type=range]:focus-visible{outline:2px solid var(--blue);outline-offset:4px
       </span>
       <span class="tm">지금</span>
     </button>
+  </div>
+
+  <!-- 입력 시트 -->
+  <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-bg" data-sheet-close></div>
+    <div class="sheet-panel">
+      <div class="sheet-head">
+        <h2 id="sheetTitle"></h2>
+        <button class="x" type="button" data-sheet-close aria-label="닫기">✕</button>
+      </div>
+      <div class="sheet-body" id="sheetBody"></div>
+      <div class="sheet-foot">
+        <button class="btn btn-ghost" type="button" data-sheet-close>취소</button>
+        <button class="btn btn-primary" type="button" id="sheetSave"></button>
+      </div>
+    </div>
   </div>
 
   <!-- 앱바 -->
@@ -366,7 +444,21 @@ input[type=range]:focus-visible{outline:2px solid var(--blue);outline-offset:4px
    1. 데이터 (더미 · 하드코딩)
    ========================================================= */
 
-var FARM = { name:'연암대학교 스마트팜 1동', totalPlants:22, hiddenNormal:16 };
+/* total = 농장 전체 개체 수. 그중 아래 beds에 등록된 개체만 개별 추적하고,
+   나머지(total - beds.length)는 정상으로 집계한다. */
+var FARM = { name:'연암대학교 스마트팜 1동', total:22 };
+
+/* 작물 종류 — 목록에 없으면 '직접 입력'으로 받고 기본 이모지를 쓴다 */
+var CROPS = [
+  { name:'토마토', emoji:'🍅' }, { name:'파프리카', emoji:'🫑' }, { name:'딸기', emoji:'🍓' },
+  { name:'오이',   emoji:'🥒' }, { name:'상추',     emoji:'🥬' }, { name:'고추',  emoji:'🌶️' },
+  { name:'가지',   emoji:'🍆' }, { name:'멜론',     emoji:'🍈' }, { name:'수박',  emoji:'🍉' },
+  { name:'참외',   emoji:'🍐' }, { name:'애호박',   emoji:'🥬' }, { name:'블루베리', emoji:'🫐' }
+];
+function cropEmoji(name){
+  for(var i=0;i<CROPS.length;i++) if(CROPS[i].name === name) return CROPS[i].emoji;
+  return '🌱';
+}
 
 var ST = {
   good:{ key:'good', label:'정상', badge:'b-good', line:'#0ca30c', color:'var(--good)'   },
@@ -469,12 +561,43 @@ var demoOn   = false, demoStep = 0, rafId = null, timers = [];
 
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
 function bedById(id){ for(var i=0;i<beds.length;i++){ if(beds[i].id===id) return beds[i]; } return beds[0]; }
+
+/* 등록되지 않은(개별 추적하지 않는) 정상 개체 수 */
+function untracked(){ return Math.max(0, FARM.total - beds.length); }
+
+/* 날짜 — 'YYYY.MM.DD' 또는 'YYYY-MM-DD' 를 받는다 */
+function parseDate(s){
+  var p = String(s).replace(/\./g, '-').split('-');
+  return new Date(+p[0], +p[1] - 1, +p[2]);
+}
+function todayMid(){ var t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); }
+function growDays(planted){
+  return Math.max(0, Math.round((todayMid() - parseDate(planted)) / 86400000));
+}
+function chartNoOf(planted){
+  var p = String(planted).replace(/\./g, '-').split('-');
+  return p[0] + '-' + p[1] + p[2];
+}
+function dotDate(s){ return String(s).replace(/-/g, '.'); }
+function dashDate(s){ return String(s).replace(/\./g, '-'); }
+function todayLabel(){
+  var t = new Date();
+  return (t.getMonth() + 1) + '월 ' + t.getDate() + '일';
+}
+
+/* 상태에 맞는 보조 문구를 다시 만든다 */
+function refreshNote(b){
+  if(b.status === 'good'){ b.note = '안정'; return; }
+  if(b.status === 'warn'){ b.note = '관찰 필요'; return; }
+  var base = b.baseline > 0 ? b.baseline : 1;
+  b.note = '평소의 ' + Math.max(2, Math.round(b.hourly / base)) + '배';
+}
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
   return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
 function $(id){ return document.getElementById(id); }
 
 function counts(){
-  var c = { good:FARM.hiddenNormal, warn:0, crit:0 };
+  var c = { good:untracked(), warn:0, crit:0 };
   beds.forEach(function(b){ c[b.status]++; });
   return c;
 }
@@ -556,15 +679,16 @@ function barChartSVG(series){
    ========================================================= */
 
 var APPBAR = {
-  ward:  function(){ return head('식물환자', 'PlantChart', FARM.name + ' · ' + FARM.totalPlants + '개체 진료 중'); },
+  ward:  function(){ return head('식물환자', 'PlantChart', FARM.name + ' · ' + FARM.total + '개체 진료 중'); },
   alert: function(){ return head('알림', '', '이상 신호가 감지되면 즉시 전송됩니다'); },
   chart: function(){
     var b = bedById(selected);
-    return '<button class="back" type="button" data-goto="ward">' +
+    var back = '<button class="back" type="button" data-goto="ward">' +
            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
            'stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-           '<path d="M15 5l-7 7 7 7"/></svg>병동으로</button>' +
-           head('진료 차트', '', b.id + ' 베드 · 차트번호 ' + b.chartNo);
+           '<path d="M15 5l-7 7 7 7"/></svg>병동으로</button>';
+    if(!b) return back + head('진료 차트', '', '등록된 개체가 없습니다');
+    return back + head('진료 차트', '', b.id + ' 베드 · 차트번호 ' + chartNoOf(b.planted));
   },
   set:   function(){ return head('설정', '', '알림 대상과 기준을 조정합니다'); }
 };
@@ -587,10 +711,20 @@ function renderWard(){
        '</div>';
 
   h += '<h2 class="sec">오늘의 진료 대기</h2>';
-  list.forEach(function(b){ h += bedCard(b); });
+  if(list.length){
+    list.forEach(function(b){ h += bedCard(b); });
+  }else{
+    h += '<div class="empty">아직 등록된 개체가 없습니다.<br>아래 버튼으로 첫 개체를 등록해 주세요.</div>';
+  }
 
-  h += '<div class="restnote"><span class="dot" style="background:var(--good)"></span>' +
-       '나머지 ' + FARM.hiddenNormal + '개체는 모두 <b>정상</b>입니다</div>';
+  if(untracked() > 0){
+    h += '<div class="restnote"><span class="dot" style="background:var(--good)"></span>' +
+         '나머지 ' + untracked() + '개체는 모두 <b>정상</b>입니다</div>';
+  }
+
+  h += '<h2 class="sec">개체 관리</h2>';
+  h += '<button class="addbtn" type="button" data-add-bed>' +
+       '<span class="plus" aria-hidden="true">＋</span>새 개체 등록</button>';
 
   $('sc-ward').innerHTML = h;
 }
@@ -640,7 +774,11 @@ function patchBed(b){
 
 /* --- 2. 알림 --- */
 function renderAlert(){
-  var b = bedById(kakaoBedId), st = ST[b.status], h = '';
+  var b = bedById(kakaoBedId), h = '';
+  if(!b){
+    $('sc-alert').innerHTML = '<div class="empty">등록된 개체가 없어 표시할 알림이 없습니다.</div>';
+    return;
+  }
 
   h += '<h2 class="sec">카카오톡 알림톡</h2>';
   h += '<div class="kakao"><div class="ktop"><span class="kprof" aria-hidden="true"></span><b>식물환자 알림</b></div>' +
@@ -674,18 +812,27 @@ function renderAlert(){
        '기준값은 설정 화면에서 조정할 수 있습니다.</div>';
 
   $('sc-alert').innerHTML = h;
-  if(st){ /* 상태값 참조 유지 */ }
 }
 
 /* --- 3. 진료 차트 --- */
 function renderChart(){
-  var b = bedById(selected), st = ST[b.status], h = '';
+  var b = bedById(selected), h = '';
+  if(!b){
+    $('sc-chart').innerHTML = '<div class="empty">등록된 개체가 없습니다.<br>병동 화면에서 개체를 먼저 등록해 주세요.</div>';
+    return;
+  }
+  var st = ST[b.status];
 
   h += '<div class="patient s-' + b.status + '">' +
     '<div class="pav" aria-hidden="true">' + b.emoji + '</div>' +
     '<div><div class="pn">' + b.crop + ' <span class="badge ' + st.badge + '">' + st.label + '</span></div>' +
-    '<div class="pd">품종 ' + esc(b.variety) + ' · 정식 ' + b.planted + '<br>' +
-    '재배 ' + b.day + '일차 · 담당 ' + esc(b.keeper) + '</div></div></div>';
+    '<div class="pd">품종 ' + esc(b.variety || '미입력') + ' · 정식 ' + dotDate(b.planted) + '<br>' +
+    '재배 ' + growDays(b.planted) + '일차 · 담당 ' + esc(b.keeper || '미지정') + '</div></div></div>';
+
+  h += '<div class="rowbtns" style="margin-top:9px">' +
+    '<button class="btn btn-ghost" type="button" data-edit-bed="' + b.id + '">개체 정보 수정</button>' +
+    '<button class="btn btn-danger" type="button" data-del-bed="' + b.id + '">퇴원 처리</button>' +
+    '</div>';
 
   h += '<h2 class="sec">초음파 계측</h2>';
   h += '<div class="card"><div class="cc-h">시간당 초음파 발생 횟수</div>' +
@@ -728,6 +875,22 @@ function renderChart(){
 /* --- 4. 설정 --- */
 function renderSet(){
   var h = '';
+
+  h += '<h2 class="sec">농장 정보</h2>';
+  h += '<div class="set-group">' +
+    '<div class="set-row"><label class="lab" for="in-farm">농장 이름</label>' +
+      '<input class="inp" id="in-farm" type="text" maxlength="40" value="' + esc(FARM.name) + '" ' +
+      'autocomplete="off" aria-describedby="in-farm-h">' +
+      '<div class="hint" id="in-farm-h">병동 화면 상단에 표시됩니다.</div></div>' +
+    '<div class="set-row"><label class="lab" for="in-total"><span>전체 개체 수</span>' +
+      '<span class="range-val"><span id="totalVal" class="tnum">' + FARM.total + '</span>개체</span></label>' +
+      '<div class="unit" style="margin-top:9px">' +
+      '<input class="inp tnum" id="in-total" type="number" inputmode="numeric" min="' + beds.length + '" ' +
+      'max="999" value="' + FARM.total + '" aria-describedby="in-total-h"><span>개체</span></div>' +
+      '<div class="hint" id="in-total-h">개별 추적 중인 개체 <b class="tnum">' + beds.length + '개</b>, ' +
+      '나머지 <b class="tnum">' + untracked() + '개</b>는 정상으로 집계합니다. ' +
+      '등록된 개체 수보다 작게 줄일 수는 없습니다.</div></div>' +
+    '</div>';
 
   h += '<h2 class="sec">알림 대상</h2>';
   h += '<div class="set-group">' +
@@ -774,8 +937,9 @@ function renderSet(){
       '<li data-step="3"><span class="k">3</span><span>푸시 알림 배너가 내려옵니다</span></li>' +
       '<li data-step="4"><span class="k">4</span><span>알림 탭에 빨간 뱃지가 붙습니다</span></li>' +
     '</ul>' +
+    '<div class="err" id="demoMsg" hidden></div>' +
     '<button class="btn btn-primary" id="btnDemo" type="button">시연 모드: 이상 신호 발생시키기</button>' +
-    '<button class="btn btn-ghost" id="btnReset" type="button">초기화</button>' +
+    '<button class="btn btn-ghost" id="btnReset" type="button">시연 전 상태로 초기화</button>' +
     '</div>';
 
   h += '<p class="foot">식물환자 · PlantChart 프로토타입<br>' +
@@ -786,6 +950,18 @@ function renderSet(){
   $('in-thr').addEventListener('input', function(e){
     threshold = parseInt(e.target.value, 10);
     $('thrVal').textContent = threshold;
+  });
+  $('in-farm').addEventListener('input', function(e){
+    FARM.name = e.target.value.trim() || '이름 없는 농장';
+  });
+  $('in-total').addEventListener('change', function(e){
+    var v = parseInt(e.target.value, 10);
+    if(isNaN(v)) v = FARM.total;
+    FARM.total = Math.min(999, Math.max(beds.length, v));
+    e.target.value = FARM.total;
+    $('totalVal').textContent = FARM.total;
+    renderSet();
+    announce('전체 개체 수를 ' + FARM.total + '개체로 변경했습니다.');
   });
   $('btnDemo').addEventListener('click', runDemo);
   $('btnReset').addEventListener('click', resetAll);
@@ -799,6 +975,187 @@ function syncDemoButtons(){
   for(var i=0;i<steps.length;i++){
     steps[i].classList.toggle('on', parseInt(steps[i].getAttribute('data-step'),10) <= demoStep);
   }
+}
+
+/* =========================================================
+   3-B. 개체 등록 / 수정 / 퇴원  (입력 시트)
+   ========================================================= */
+
+var sheetSubmit = null;   // 저장 버튼이 호출할 함수
+/* 닫기 애니메이션(260ms) 동안 hidden이 아직 false라, 열림 판정은 별도 플래그로 한다 */
+var sheetOpen = false;
+
+function openSheet(title, bodyHTML, saveLabel, onSubmit, danger){
+  $('sheetTitle').textContent = title;
+  $('sheetBody').innerHTML = bodyHTML;
+  var save = $('sheetSave');
+  save.textContent = saveLabel;
+  save.className = 'btn ' + (danger ? 'btn-danger' : 'btn-primary');
+  sheetSubmit = onSubmit;
+  sheetOpen = true;
+  var sh = $('sheet');
+  sh.hidden = false;
+  setTimeout(function(){ sh.classList.add('show'); }, 10);
+  var first = $('sheetBody').querySelector('input, select, textarea');
+  if(first) setTimeout(function(){ first.focus(); }, 260);
+}
+
+function closeSheet(){
+  var sh = $('sheet');
+  sh.classList.remove('show');
+  sheetSubmit = null;
+  sheetOpen = false;
+  setTimeout(function(){ sh.hidden = true; $('sheetBody').innerHTML = ''; }, 260);
+}
+
+function showSheetError(msg){
+  var e = $('sheetBody').querySelector('.err');
+  if(e){ e.textContent = msg; e.hidden = false; }
+  $('sheetBody').scrollTop = 0;
+}
+
+function field(id, label, inner, hint, required){
+  return '<div class="fld"><label for="' + id + '">' + esc(label) +
+    (required ? '<span class="req" aria-hidden="true">*</span>' : '') + '</label>' + inner +
+    (hint ? '<div class="fhint">' + hint + '</div>' : '') + '</div>';
+}
+
+/* 개체 등록/수정 폼 */
+function openBedSheet(bedId){
+  var b = bedId ? bedById(bedId) : null;
+  var isNew = !b;
+  var known = b ? CROPS.some(function(c){ return c.name === b.crop; }) : true;
+
+  var opts = CROPS.map(function(c){
+    return '<option value="' + esc(c.name) + '"' +
+      (b && b.crop === c.name ? ' selected' : '') + '>' + c.emoji + ' ' + esc(c.name) + '</option>';
+  }).join('');
+  opts += '<option value="__custom"' + (b && !known ? ' selected' : '') + '>✏️ 직접 입력</option>';
+
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+
+  var h = '<div class="err" hidden></div>';
+
+  h += field('in-bedid', '베드 번호',
+    '<input class="inp" id="in-bedid" type="text" maxlength="10" autocomplete="off" ' +
+    'value="' + (b ? esc(b.id) : '') + '" placeholder="예: A-3">',
+    '병상 번호처럼 씁니다. 다른 개체와 겹칠 수 없습니다.', true);
+
+  h += field('in-crop', '작물',
+    '<select class="inp" id="in-crop">' + opts + '</select>' +
+    '<input class="inp" id="in-cropx" type="text" maxlength="20" autocomplete="off" placeholder="작물 이름" ' +
+    'value="' + (b && !known ? esc(b.crop) : '') + '"' + (b && !known ? '' : ' hidden') + '>',
+    '', true);
+
+  h += field('in-variety', '품종',
+    '<input class="inp" id="in-variety" type="text" maxlength="20" autocomplete="off" ' +
+    'value="' + (b ? esc(b.variety || '') : '') + '" placeholder="예: 대프니스">',
+    '비워두면 “미입력”으로 표시됩니다.');
+
+  h += field('in-planted', '정식일',
+    '<input class="inp" id="in-planted" type="date" max="' + todayStr + '" ' +
+    'value="' + (b ? dashDate(b.planted) : todayStr) + '">',
+    '재배 일차와 차트번호가 이 날짜로 계산됩니다.', true);
+
+  h += field('in-keeper', '담당자',
+    '<input class="inp" id="in-keeper" type="text" maxlength="20" autocomplete="off" ' +
+    'value="' + (b ? esc(b.keeper || '') : '') + '" placeholder="예: 김농부">');
+
+  h += field('in-baseline', '평소 초음파 발생량',
+    '<div class="unit"><input class="inp tnum" id="in-baseline" type="number" inputmode="numeric" ' +
+    'min="0" max="20" value="' + (b ? b.baseline : 3) + '"><span>회 / 시간</span></div>',
+    '이 개체의 평상시 값입니다. “평소의 몇 배”를 계산하는 기준이 됩니다.');
+
+  openSheet(isNew ? '새 개체 등록' : '개체 정보 수정', h, isNew ? '등록하기' : '저장하기',
+    function(){ return saveBed(b); });
+
+  var sel = $('in-crop'), cx = $('in-cropx');
+  sel.addEventListener('change', function(){
+    cx.hidden = sel.value !== '__custom';
+    if(!cx.hidden) cx.focus();
+  });
+}
+
+function saveBed(b){
+  var isNew = !b;
+  var id = $('in-bedid').value.trim();
+  var sel = $('in-crop').value;
+  var crop = sel === '__custom' ? $('in-cropx').value.trim() : sel;
+  var variety = $('in-variety').value.trim();
+  var planted = $('in-planted').value;
+  var keeper = $('in-keeper').value.trim();
+  var baseline = parseInt($('in-baseline').value, 10);
+
+  if(!id) return showSheetError('베드 번호를 입력해 주세요.');
+  var dup = beds.some(function(x){ return x.id === id && x !== b; });
+  if(dup) return showSheetError('이미 쓰고 있는 베드 번호입니다: ' + id);
+  if(!crop) return showSheetError('작물 이름을 입력해 주세요.');
+  if(!planted) return showSheetError('정식일을 선택해 주세요.');
+  if(parseDate(planted) > todayMid()) return showSheetError('정식일은 오늘보다 미래일 수 없습니다.');
+  if(isNaN(baseline) || baseline < 0 || baseline > 20) return showSheetError('평소 초음파 발생량은 0~20 사이로 입력해 주세요.');
+
+  if(isNew){
+    var lo = Math.max(0, baseline - 1);
+    var nb = {
+      id: id, crop: crop, emoji: cropEmoji(crop), status: 'good',
+      hourly: baseline, baseline: baseline,
+      series: [baseline, lo, baseline, lo, baseline, lo, baseline],
+      variety: variety, planted: dotDate(planted), keeper: keeper, note: '안정',
+      dx: { title:'이상 없음', prob: 5,
+            desc:'등록 직후입니다. 초음파 기준선을 수집하는 중이며 현재 이상 신호는 없습니다.' },
+      rx: '현재 관리 유지',
+      log: [{ t: todayLabel(), x: '개체 등록 · 진료 시작' }]
+    };
+    beds.push(nb);
+    FARM.total = Math.max(FARM.total + 1, beds.length);
+    selected = id;
+    announce(id + ' 베드에 ' + crop + '을(를) 등록했습니다.');
+  }else{
+    var oldId = b.id;
+    b.id = id; b.crop = crop; b.emoji = cropEmoji(crop);
+    b.variety = variety; b.planted = dotDate(planted); b.keeper = keeper;
+    b.baseline = baseline;
+    refreshNote(b);
+    if(oldId !== id){
+      if(selected === oldId) selected = id;
+      if(kakaoBedId === oldId) kakaoBedId = id;
+      pushLog.forEach(function(p){ if(p.bed === oldId) p.bed = id; });
+    }
+    announce(id + ' 베드 정보를 수정했습니다.');
+  }
+
+  closeSheet();
+  RENDER[current]();
+  $('appbar').innerHTML = APPBAR[current]();
+}
+
+/* 퇴원 처리 */
+function openDeleteSheet(bedId){
+  var b = bedById(bedId);
+  if(!b) return;
+  var h = '<div class="err" hidden></div>' +
+    '<p class="confirm-msg"><b>' + esc(b.id) + ' 베드 ' + esc(b.crop) + '</b>을(를) 목록에서 지웁니다.<br>' +
+    '진료 기록과 계측 이력도 함께 사라지며, 되돌릴 수 없습니다.</p>' +
+    '<p class="confirm-msg">전체 개체 수는 ' + FARM.total + '개체에서 ' +
+    Math.max(beds.length - 1, FARM.total - 1) + '개체로 줄어듭니다.</p>';
+  openSheet('퇴원 처리', h, '퇴원 처리하기', function(){ return deleteBed(bedId); }, true);
+}
+
+function deleteBed(bedId){
+  var i = beds.findIndex(function(x){ return x.id === bedId; });
+  if(i < 0) return closeSheet();
+  var gone = beds[i];
+  beds.splice(i, 1);
+  FARM.total = Math.max(beds.length, FARM.total - 1);
+  pushLog = pushLog.filter(function(p){ return p.bed !== bedId; });
+  if(selected === bedId) selected = beds.length ? beds[0].id : null;
+  if(kakaoBedId === bedId) kakaoBedId = beds.length ? sortedBeds()[0].id : null;
+
+  closeSheet();
+  announce(gone.id + ' 베드 ' + gone.crop + '을(를) 퇴원 처리했습니다.');
+  go('ward');
 }
 
 /* =========================================================
@@ -853,8 +1210,18 @@ function hideBanner(){ $('banner').classList.remove('show'); }
    6. 시연 모드
    ========================================================= */
 
-var DEMO_BASE   = [3,2,3,2,3,2,3];
-var DEMO_TARGET = [3,2,3,4,9,21,38];
+/* 시연 대상은 실행 시점에 정상 개체 중에서 고른다 (개체가 바뀌어도 동작하도록) */
+var demoBedId = null, DEMO_BASE = null, DEMO_TARGET = null, demoSnapshot = null;
+
+function pickDemoBed(){
+  var list = sortedBeds();
+  for(var i=0;i<list.length;i++) if(list[i].status === 'good') return list[i];
+  return null;
+}
+function demoMsg(text){
+  var el = $('demoMsg');
+  if(el){ el.textContent = text || ''; el.hidden = !text; }
+}
 
 function tween(dur, onStep, onDone){
   var start = null;
@@ -869,7 +1236,8 @@ function tween(dur, onStep, onDone){
 }
 
 function applyDemoProgress(p){
-  var b = bedById('B-2');
+  var b = bedById(demoBedId);
+  if(!b) return;
   var s = [];
   for(var i=0;i<DEMO_BASE.length;i++){
     s.push(Math.round(DEMO_BASE[i] + (DEMO_TARGET[i] - DEMO_BASE[i]) * p));
@@ -881,20 +1249,38 @@ function applyDemoProgress(p){
 
 function runDemo(){
   if(demoOn) return;
+
+  var b = pickDemoBed();
+  if(!b){
+    demoMsg('시연하려면 정상 상태인 개체가 최소 하나 필요합니다. 개체를 등록하거나 초기화 후 다시 시도해 주세요.');
+    announce('시연할 정상 개체가 없습니다.');
+    return;
+  }
+  demoMsg('');
+
+  /* 시연 직전 상태를 저장해 두고, 초기화 때 여기로만 되돌린다
+     (사용자가 등록·수정한 개체가 지워지지 않도록) */
+  demoSnapshot = { beds: clone(beds), pushLog: clone(pushLog),
+                   kakaoBedId: kakaoBedId, selected: selected, farm: clone(FARM) };
+
+  demoBedId = b.id;
+  var peak = Math.max(threshold + 5, Math.round(threshold * 1.27));
+  DEMO_BASE = b.series.slice();
+  DEMO_TARGET = [DEMO_BASE[0], DEMO_BASE[1], DEMO_BASE[2],
+                 Math.round(peak * 0.11), Math.round(peak * 0.24), Math.round(peak * 0.55), peak];
+
   demoOn = true; demoStep = 0;
   syncDemoButtons();
-
-  var b = bedById('B-2');
   go('ward');
-  announce('시연을 시작합니다. B-2 파프리카의 신호가 올라갑니다.');
+  announce('시연을 시작합니다. ' + b.id + ' ' + b.crop + '의 신호가 올라갑니다.');
 
   /* 1단계 (0 ~ 1.1초) — 정상 → 주의 */
   demoStep = 2; syncDemoButtons();
   tween(1100, function(p){
     applyDemoProgress(p * 0.45);
-    var bb = bedById('B-2');
-    if(bb.hourly >= threshold/2 && bb.status === 'good'){
-      bb.status = 'warn'; bb.note = '관찰 필요';
+    var bb = bedById(demoBedId);
+    if(bb && bb.hourly >= threshold/2 && bb.status === 'good'){
+      bb.status = 'warn'; refreshNote(bb);
       demoStep = 1; syncDemoButtons();
       if(current === 'ward'){ patchBed(bb); }
     }
@@ -904,26 +1290,24 @@ function runDemo(){
     timers.push(setTimeout(function(){
       tween(1100, function(p){
         applyDemoProgress(0.45 + p * 0.55);
-        var bb = bedById('B-2');
-        if(bb.hourly >= threshold && bb.status !== 'crit'){
-          bb.status = 'crit'; bb.note = '평소의 ' + Math.round(bb.hourly / bb.baseline) + '배';
-        }else if(bb.status === 'crit'){
-          bb.note = '평소의 ' + Math.round(bb.hourly / bb.baseline) + '배';
-        }
+        var bb = bedById(demoBedId);
+        if(!bb) return;
+        if(bb.hourly >= threshold) bb.status = 'crit';
+        refreshNote(bb);
         if(current === 'ward') patchBed(bb);
-      }, function(){
-        finishDemo(b);
-      });
+      }, finishDemo);
     }, 200));
   });
 }
 
-function finishDemo(b){
-  var bb = bedById('B-2');
+function finishDemo(){
+  var bb = bedById(demoBedId);
+  if(!bb){ demoOn = false; syncDemoButtons(); return; }
+
   bb.status = 'crit';
   bb.hourly = DEMO_TARGET[DEMO_TARGET.length-1];
   bb.series = DEMO_TARGET.slice();
-  bb.note = '평소의 ' + Math.round(bb.hourly / bb.baseline) + '배';
+  refreshNote(bb);
   bb.dx = { title:'수분 스트레스 의심', prob:79,
             desc:'6시간 전부터 급격히 증가했습니다. 육안 증상은 2~3일 뒤 나타날 것으로 예상됩니다.' };
   bb.rx = '즉시 관수 밸브 · 배지 함수율 점검';
@@ -934,19 +1318,20 @@ function finishDemo(b){
   /* 3단계 — 푸시 배너 */
   timers.push(setTimeout(function(){
     demoStep = 3; syncDemoButtons();
-    showBanner('B-2 위험 단계 진입', '파프리카 · 초음파 ' + bb.hourly + '회/시간 감지', 'B-2');
+    showBanner(bb.id + ' 위험 단계 진입',
+               bb.crop + ' · 초음파 ' + bb.hourly + '회/시간 감지', bb.id);
 
     /* 4단계 — 알림 뱃지 + 기록 추가 */
     timers.push(setTimeout(function(){
       demoStep = 4; syncDemoButtons();
-      pushLog.unshift({ t:'B-2 위험 단계 진입',
+      pushLog.unshift({ t: bb.id + ' 위험 단계 진입',
                         b:'초음파 ' + bb.hourly + '회/시간 감지 · 평소 ' + bb.baseline + '회',
-                        tm:'방금', bed:'B-2', isnew:true });
-      kakaoBedId = 'B-2';
+                        tm:'방금', bed: bb.id, isnew:true });
+      kakaoBedId = bb.id;
       setUnread(unread + 1);
       if(current === 'alert') renderAlert();
       demoOn = false; syncDemoButtons();
-      announce('B-2 파프리카가 위험 단계에 진입했습니다. 알림이 발송되었습니다.');
+      announce(bb.id + ' ' + bb.crop + '이(가) 위험 단계에 진입했습니다. 알림이 발송되었습니다.');
     }, 260));
   }, 180));
 }
@@ -954,18 +1339,30 @@ function finishDemo(b){
 function resetAll(){
   if(rafId){ cancelAnimationFrame(rafId); rafId = null; }
   timers.forEach(clearTimeout); timers = [];
-
-  beds = clone(INITIAL_BEDS);
-  pushLog = clone(INITIAL_PUSH);
-  kakaoBedId = 'A-3';
-  if(selected === 'B-2') selected = 'A-3';
   demoOn = false; demoStep = 0;
-
   hideBanner();
   setUnread(0);
+
+  if(!demoSnapshot){
+    syncDemoButtons();
+    demoMsg('되돌릴 시연 기록이 없습니다.');
+    announce('되돌릴 시연 기록이 없습니다.');
+    return;
+  }
+
+  beds       = clone(demoSnapshot.beds);
+  pushLog    = clone(demoSnapshot.pushLog);
+  kakaoBedId = demoSnapshot.kakaoBedId;
+  selected   = demoSnapshot.selected;
+  FARM       = clone(demoSnapshot.farm);
+  demoSnapshot = null;
+  demoBedId = null;
+
+  $('appbar').innerHTML = APPBAR[current]();
   RENDER[current]();
   syncDemoButtons();
-  announce('초기 상태로 되돌렸습니다.');
+  demoMsg('');
+  announce('시연 전 상태로 되돌렸습니다.');
 }
 
 /* =========================================================
@@ -973,6 +1370,19 @@ function resetAll(){
    ========================================================= */
 
 document.addEventListener('click', function(e){
+  /* 시트가 열려 있을 때는 시트 조작만 받는다 */
+  if(e.target.closest('[data-sheet-close]')){ closeSheet(); return; }
+  if(e.target.closest('#sheetSave')){ if(sheetSubmit) sheetSubmit(); return; }
+  if(sheetOpen && !e.target.closest('.sheet-panel')) return;
+
+  if(e.target.closest('[data-add-bed]')){ openBedSheet(null); return; }
+
+  var editBtn = e.target.closest('[data-edit-bed]');
+  if(editBtn){ openBedSheet(editBtn.getAttribute('data-edit-bed')); return; }
+
+  var delBtn = e.target.closest('[data-del-bed]');
+  if(delBtn){ openDeleteSheet(delBtn.getAttribute('data-del-bed')); return; }
+
   var tabBtn = e.target.closest('[data-tab]');
   if(tabBtn){ go(tabBtn.getAttribute('data-tab')); return; }
 
@@ -984,6 +1394,16 @@ document.addEventListener('click', function(e){
     var id = bedBtn.getAttribute('data-bed');
     if(id) openChart(id);
     return;
+  }
+});
+
+/* 시트: Esc 닫기, Enter 저장 */
+document.addEventListener('keydown', function(e){
+  if(!sheetOpen) return;
+  if(e.key === 'Escape'){ e.preventDefault(); closeSheet(); }
+  else if(e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'date'){
+    e.preventDefault();
+    if(sheetSubmit) sheetSubmit();
   }
 });
 
