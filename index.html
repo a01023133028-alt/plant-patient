@@ -86,6 +86,34 @@ button{background:none;border:0;cursor:pointer}
 .todo .btn{margin-top:13px}
 .todo .rowbtns .btn{margin-top:0}
 .doneflag{color:var(--blue-d);font-weight:800}
+
+/* ===== 예시 데이터 고지 ===== */
+.demoflag-bar{
+  background:#fdfaf2;border:1.5px solid #e7cd93;border-radius:12px;padding:11px 12px;
+  margin-bottom:14px;font-size:13px;color:var(--warning-t);font-weight:700;line-height:1.6
+}
+.demoflag-bar b{font-weight:800}
+.demoflag-line{
+  background:#fdfaf2;border:1px solid #e7cd93;border-radius:10px;padding:8px 11px;
+  margin-bottom:10px;font-size:12.5px;color:var(--warning-t);font-weight:700
+}
+.app.big .demoflag-bar{font-size:15.5px}
+.app.big .demoflag-line{font-size:14.5px}
+
+/* ===== 한계 고지 ===== */
+.limits{background:var(--card);border:1px solid var(--grid);border-radius:14px;padding:13px}
+.limits .ltitle{font-size:14.5px;font-weight:800;margin-bottom:10px}
+.limits ul{list-style:none}
+.limits li{
+  font-size:13px;color:var(--text2);line-height:1.65;padding-left:16px;position:relative;margin-bottom:10px
+}
+.limits li:last-child{margin-bottom:0}
+.limits li::before{
+  content:"";position:absolute;left:0;top:8px;width:5px;height:5px;border-radius:50%;background:var(--warning-t)
+}
+.limits li b{color:var(--text);font-weight:700}
+.app.big .limits .ltitle{font-size:17px}
+.app.big .limits li{font-size:15.5px}
 .donecard{
   background:#eef5fd;border:1.5px solid var(--blue);border-radius:14px;padding:13px;margin-top:9px
 }
@@ -829,6 +857,18 @@ function dxPlain(b){
     (b.status === 'crit' ? '이상 신호가 크게 늘었습니다'
      : b.status === 'warn' ? '이상 신호가 늘고 있습니다' : '이상 없습니다');
 }
+
+/* 확률을 소수점까지 제시할 근거가 없으므로 3단계 등급으로만 표시한다.
+   dx.prob은 등급을 정하는 내부 순서값으로만 쓰고 화면에 숫자로 내보내지 않는다. */
+function dxGrade(b){
+  if(b.status === 'good') return '이상 신호 없음';
+  var p = b.dx.prob;
+  return p >= 70 ? '가능성 높음' : p >= 40 ? '가능성 중간' : '가능성 낮음';
+}
+
+/* 원논문에서 직접 확인된 작물. 나머지는 잠정 적용이며 화면에 그렇게 밝힌다. */
+var VERIFIED_CROPS = ['토마토'];
+function isVerifiedCrop(name){ return VERIFIED_CROPS.indexOf(name) >= 0; }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
   return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
 function $(id){ return document.getElementById(id); }
@@ -971,6 +1011,9 @@ function todoCard(){
 
 function renderWard(){
   var c = counts(), list = sortedBeds(), h = '';
+
+  h += '<div class="demoflag-bar">시연용 화면입니다.<br>' +
+       '표시된 계측값은 <b>실제 측정 데이터가 아닌 예시</b>이며, 아직 현장 실측을 마치지 않았습니다.</div>';
 
   h += todoCard();
 
@@ -1162,6 +1205,8 @@ function renderChart(){
   }
   var st = ST[b.status];
 
+  h += '<div class="demoflag-line">시연용 예시 데이터 · 실제 계측값이 아닙니다</div>';
+
   h += '<div class="patient s-' + b.status + '">' +
     '<div class="pav" aria-hidden="true">' + b.emoji + '</div>' +
     '<div><div class="pn">' + b.crop + ' <span class="badge ' + st.badge + '">' + st.label + '</span></div>' +
@@ -1187,7 +1232,8 @@ function renderChart(){
   h += '<div class="dx s-' + b.status + '" style="margin-bottom:9px">' +
     '<div class="dl">진단 결과</div>' +
     '<div class="dv">' + esc(dxPlain(b)) + '</div>' +
-    '<div class="dsub">' + esc(b.dx.title) + ' · 가능성 <span class="tnum">' + b.dx.prob + '%</span></div>' +
+    (b.status === 'good' ? ''    /* 정상은 위 문장과 중복이라 생략 */
+      : '<div class="dsub">' + esc(b.dx.title) + ' · ' + dxGrade(b) + '</div>') +
     '<div class="dp">' + esc(b.dx.desc) + '</div></div>';
 
   h += '<div class="rx"><div class="dl">오늘 할 일</div><div class="dv">' + esc(b.rx) + '</div></div>';
@@ -1217,9 +1263,23 @@ function renderChart(){
     '<b>시간당 30~50회</b>, 정상일 때는 거의 발생하지 않습니다. 사람의 가청 한계는 20kHz라 맨귀로는 들을 수 없고, ' +
     '이 소리는 <b>육안 시듦 증상보다 2~3일 먼저</b> 나타납니다.<br><br>' +
     '공개 데이터 <b class="tnum">5,477건</b>을 자체 재분석한 결과, 식물 소리는 20kHz 미만 성분이 <b>0.2%</b>인 반면 ' +
-    '온실 배경소음은 <b>18.6%</b>였습니다. 대역 필터만으로 1차 분리가 가능합니다.' +
+    '온실 배경소음은 <b>18.6%</b>였습니다. 저역을 잘라내는 것만으로 배경소음의 상당 부분을 걷어낼 수 있다는 뜻입니다. ' +
+    '다만 이것은 <b>비율</b>일 뿐이어서, 남은 고역 성분에 견줘 식물 소리가 실제로 얼마나 크게 잡히는지(신호 대 잡음비)는 ' +
+    '<b>현장 실측으로 확인해야 합니다.</b>' +
     '<div class="src">Khait et al., <i>Cell</i> (2023) — “Sounds emitted by plants under stress are airborne and informative”</div>' +
     '</div>';
+
+  h += '<h2 class="sec">아직 못 하는 것</h2>';
+  h += '<div class="limits"><div class="ltitle">이 판독의 한계</div><ul>' +
+    '<li><b>맑은 날 오후의 정상 변동을 가려내지 못합니다.</b> 초음파는 증산이 활발하면 건강한 개체에서도 늘어납니다. ' +
+    '지금은 시간당 절대 횟수만 보기 때문에 오탐이 날 수 있습니다. 온실의 일사·온습도·배지 함수율과 묶어 ' +
+    '“같은 조건 대비 편차”로 판단하는 것이 다음 과제입니다.</li>' +
+    '<li>' + (isVerifiedCrop(b.crop)
+      ? '<b>' + esc(b.crop) + '</b>는 원논문에서 직접 확인된 작물입니다.'
+      : '<b>' + esc(b.crop) + '는 아직 검증 전입니다.</b> 토마토·담배에서 확인된 결과를 잠정 적용한 것이라, ' +
+        '이 개체의 판독은 참고용으로만 보십시오.') + '</li>' +
+    '<li><b>가능성은 등급으로만 제시합니다.</b> 확률을 소수점까지 말할 만큼 학습·검증 데이터를 갖추지 못했습니다.</li>' +
+    '</ul></div>';
 
   $('sc-chart').innerHTML = h;
 }
@@ -1355,8 +1415,9 @@ function renderReport(){
       '<div class="barrow"><span class="bl">온실 소음</span>' +
         '<span class="bartrack"><i style="width:18.6%;background:var(--muted)"></i></span>' +
         '<span class="bv">18.6%</span></div>' +
-      '<div class="fhint" style="margin-top:9px">20kHz 미만 성분이 차지하는 비율입니다. ' +
-      '공개 데이터 <b class="tnum">5,477건</b>을 재분석한 결과로, 대역 필터만으로 1차 분리가 가능하다는 근거입니다.</div>' +
+      '<div class="fhint" style="margin-top:9px">20kHz 미만 성분이 차지하는 <b>비율</b>입니다. ' +
+      '공개 데이터 <b class="tnum">5,477건</b>을 재분석한 결과로, 저역을 잘라내면 배경소음의 상당 부분이 걷힌다는 뜻입니다. ' +
+      '다만 남은 고역에서의 신호 대 잡음비는 현장 실측으로 확인해야 합니다.</div>' +
     '</div>' +
     '<div class="disclaim">두 소리는 특성을 설명하기 위해 앱에서 <b>합성한 재현음</b>입니다. ' +
     '실제 녹음이 아닙니다.</div>' +
@@ -1504,7 +1565,9 @@ function renderSet(){
       'aria-describedby="in-thr-h">' +
     '<div class="range-ends"><span class="tnum">20</span><span class="tnum">60</span></div>' +
     '<div class="hint" id="in-thr-h">연구 보고 기준은 시간당 30~50회입니다. 기본값 30회를 권장합니다. ' +
-      '기준을 바꾸면 진료 차트의 빨간 점선이 함께 움직입니다.</div>' +
+      '기준을 바꾸면 진료 차트의 빨간 점선이 함께 움직입니다.<br>' +
+      '지금은 <b>절대 횟수</b>만 봅니다. 시간대와 일사량을 반영하지 않아, 증산이 활발한 맑은 날 오후에는 ' +
+      '건강한 개체도 위험으로 잡힐 수 있습니다.</div>' +
     '</div></div>';
 
   h += '<h2 class="sec">알림 시간대</h2>';
@@ -1520,8 +1583,8 @@ function renderSet(){
   h += '<h2 class="sec">시연</h2>';
   h += '<div class="demo-box">' +
     '<div class="dh">시연 모드 · 이상 신호 발생시키기</div>' +
-    '<div class="dq">B-2 파프리카에 스트레스 신호가 나타나는 상황을 3초 동안 재현합니다. ' +
-    '실제 계측 없이 화면 동작만 보여주는 발표용 기능입니다.</div>' +
+    '<div class="dq">정상 개체 하나에 스트레스 신호가 나타나는 상황을 3초 동안 재현합니다.<br>' +
+    '<b>실제 계측이 아니라 미리 정해둔 값으로 화면만 움직이는 발표용 기능</b>입니다.</div>' +
     '<ul class="demo-steps" id="demoSteps">' +
       '<li data-step="1"><span class="k">1</span><span>B-2 상태가 정상 → 주의 → 위험으로 바뀝니다</span></li>' +
       '<li data-step="2"><span class="k">2</span><span>추세 그래프가 위로 치솟습니다</span></li>' +
@@ -1643,7 +1706,7 @@ function openBedSheet(bedId){
     '<select class="inp" id="in-crop">' + opts + '</select>' +
     '<input class="inp" id="in-cropx" type="text" maxlength="20" autocomplete="off" placeholder="작물 이름" ' +
     'value="' + (b && !known ? esc(b.crop) : '') + '"' + (b && !known ? '' : ' hidden') + '>',
-    '', true);
+    '1차 검증 대상은 <b>토마토</b>입니다. 다른 작물은 아직 검증 전이라 판독을 참고용으로만 보십시오.', true);
 
   h += field('in-variety', '품종',
     '<input class="inp" id="in-variety" type="text" maxlength="20" autocomplete="off" ' +
