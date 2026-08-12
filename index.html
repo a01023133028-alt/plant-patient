@@ -84,6 +84,15 @@ button{background:none;border:0;cursor:pointer}
 .tdp{font-size:14.5px;color:var(--text2);margin-top:9px;line-height:1.55}
 .tdp b{color:var(--text);font-weight:700}
 .todo .btn{margin-top:13px}
+.todo .rowbtns .btn{margin-top:0}
+.doneflag{color:var(--blue-d);font-weight:800}
+.donecard{
+  background:#eef5fd;border:1.5px solid var(--blue);border-radius:14px;padding:13px;margin-top:9px
+}
+.donecard .dl{color:var(--blue-d)}
+.donecard .dv{font-size:16.5px;color:var(--blue-d)}
+.donecard .dp{color:var(--blue-d);opacity:.85}
+.app.big .donecard .dv{font-size:19.5px}
 
 /* ===== 상태 요약 타일 ===== */
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
@@ -755,6 +764,49 @@ function todayLabel(){
   var t = new Date();
   return (t.getMonth() + 1) + '월 ' + t.getDate() + '일';
 }
+function nowLabel(){
+  var t = new Date();
+  return '오늘 ' + String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+}
+
+/* --- 조치 완료 처리 --- */
+function todayKey(){
+  var t = new Date();
+  return t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+}
+function needsAction(b){ return b.status !== 'good'; }
+function isDone(b){ return !!b.doneOn && b.doneOn === todayKey(); }
+
+/* 손봐야 하는데 아직 조치하지 않은 개체 중 가장 급한 것 */
+function pendingTop(){
+  var list = sortedBeds();
+  for(var i=0;i<list.length;i++) if(needsAction(list[i]) && !isDone(list[i])) return list[i];
+  return null;
+}
+function doneCount(){
+  var n = 0;
+  beds.forEach(function(b){ if(needsAction(b) && isDone(b)) n++; });
+  return n;
+}
+
+function markDone(bedId){
+  var b = bedById(bedId);
+  if(!b || isDone(b)) return;
+  b.doneOn = todayKey();
+  b.log.unshift({ t: nowLabel(), x: '조치 완료 · ' + b.rx });
+  $('appbar').innerHTML = APPBAR[current]();
+  RENDER[current]();
+  announce(b.id + ' 조치를 완료로 기록했습니다.');
+}
+function undoDone(bedId){
+  var b = bedById(bedId);
+  if(!b) return;
+  b.doneOn = null;
+  if(b.log.length && b.log[0].x.indexOf('조치 완료') === 0) b.log.shift();
+  $('appbar').innerHTML = APPBAR[current]();
+  RENDER[current]();
+  announce(b.id + ' 조치 완료를 취소했습니다.');
+}
 
 /* 상태에 맞는 보조 문구를 다시 만든다.
    숫자보다 "평소와 견줘 어떤가"를 먼저 읽히게 한다 */
@@ -889,21 +941,32 @@ function head(title, en, sub){
 /* --- 1. 병동 --- */
 /* 첫 화면 맨 위 — "지금 무엇을 해야 하는가"를 한 문장으로 */
 function todoCard(){
-  var top = sortedBeds()[0];
-  if(!top || top.status === 'good'){
+  var top = pendingTop();
+
+  if(!top){
+    var done = doneCount();
+    if(done > 0){
+      return '<div class="todo ok">' +
+        '<div class="tdl">오늘 할 일</div>' +
+        '<div class="tdv">오늘 할 일을 모두 마쳤습니다</div>' +
+        '<div class="tdp">' + done + '개체 조치 완료. 신호가 내려가는지 지켜보고 있습니다.</div>' +
+        '</div>';
+    }
     return '<div class="todo ok">' +
       '<div class="tdl">오늘 할 일</div>' +
       '<div class="tdv">지금 손볼 개체가 없습니다</div>' +
       '<div class="tdp">등록된 개체가 모두 평소와 비슷합니다. 계속 지켜보고 있습니다.</div>' +
       '</div>';
   }
+
   return '<div class="todo s-' + top.status + '">' +
     '<div class="tdl">오늘 할 일</div>' +
     '<div class="tdv">' + top.id + ' ' + esc(top.crop) + ', ' + esc(dxPlain(top)) + '</div>' +
     '<div class="tdp"><b>' + esc(top.rx) + '</b><br>' + esc(top.note) + ' · 시간당 ' + top.hourly + '회</div>' +
-    '<button class="btn btn-primary" type="button" data-bed="' + top.id + '">' +
-    top.id + ' 자세히 보기</button>' +
-    '</div>';
+    '<div class="rowbtns" style="margin-top:13px">' +
+      '<button class="btn btn-ghost" type="button" data-bed="' + top.id + '">자세히 보기</button>' +
+      '<button class="btn btn-primary" type="button" data-done="' + top.id + '">조치했어요</button>' +
+    '</div></div>';
 }
 
 function renderWard(){
@@ -1008,7 +1071,8 @@ function bedCard(b){
     '<span class="bedno">' + b.id + '</span>' +
     '<span class="bedinfo">' +
       '<span class="t">' + b.crop + ' <span class="badge ' + st.badge + '">' + st.label + '</span></span>' +
-      '<span class="s"><b data-note="' + b.id + '">' + esc(b.note) + '</b>' +
+      '<span class="s">' + (isDone(b) ? '<span class="doneflag">✓ 오늘 조치함</span> · ' : '') +
+      '<b data-note="' + b.id + '">' + esc(b.note) + '</b>' +
       ' · <span class="tnum" data-hourly="' + b.id + '">시간당 ' + b.hourly + '회</span></span>' +
     '</span>' + sparkSVG(b) + '</button>';
 }
@@ -1127,6 +1191,18 @@ function renderChart(){
     '<div class="dp">' + esc(b.dx.desc) + '</div></div>';
 
   h += '<div class="rx"><div class="dl">오늘 할 일</div><div class="dv">' + esc(b.rx) + '</div></div>';
+
+  if(isDone(b)){
+    h += '<div class="donecard">' +
+      '<div class="dl">조치 기록</div>' +
+      '<div class="dv">오늘 조치를 마쳤습니다</div>' +
+      '<div class="dp">신호가 내려가는지 지켜보는 중입니다. 잘못 눌렀다면 취소할 수 있습니다.</div>' +
+      '<button class="btn btn-ghost" type="button" data-undo="' + b.id + '">조치 완료 취소</button>' +
+      '</div>';
+  }else if(needsAction(b)){
+    h += '<button class="btn btn-primary" type="button" data-done="' + b.id + '" ' +
+         'style="margin-top:9px">조치했어요</button>';
+  }
 
   h += '<h2 class="sec">진료 기록</h2><div class="tl">';
   b.log.forEach(function(l){
@@ -1896,6 +1972,12 @@ document.addEventListener('click', function(e){
   if(e.target.closest('[data-sheet-close]')){ closeSheet(); return; }
   if(e.target.closest('#sheetSave')){ if(sheetSubmit) sheetSubmit(); return; }
   if(sheetOpen && !e.target.closest('.sheet-panel')) return;
+
+  var doneBtn = e.target.closest('[data-done]');
+  if(doneBtn){ markDone(doneBtn.getAttribute('data-done')); return; }
+
+  var undoBtn = e.target.closest('[data-undo]');
+  if(undoBtn){ undoDone(undoBtn.getAttribute('data-undo')); return; }
 
   var playBtn = e.target.closest('[data-play]');
   if(playBtn){ playSound(playBtn.getAttribute('data-play')); return; }
