@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>식물환자 관수 시뮬레이터</title>
+<style>
+  :root {
+    --bg: #F5F6F1; --ink: #16302B; --text: #3E4B46; --green: #17704A; --blue: #2F6DB5;
+    --red: #B23A26; --gray: #8F978E; --card: #FFFFFF; --line: #DDE1D8; --soft: #EBEEE6;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    font-size: 15px; line-height: 1.4;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  button, input, select { font-family: inherit; }
+
+  header { display: flex; align-items: baseline; gap: 20px; padding: 14px 24px 8px; }
+  header h1 { margin: 0; color: var(--ink); font-size: 28px; letter-spacing: -0.5px; }
+  header p { margin: 0; font-size: 17px; }
+  header .tag { margin-left: auto; font-size: 13px; color: var(--ink); background: #FFF3C9;
+    border: 1px solid #E5CF7C; border-radius: 6px; padding: 4px 10px; white-space: nowrap; }
+
+  main { flex: 1; display: grid; grid-template-columns: 330px minmax(380px, 1fr) minmax(460px, 1.15fr);
+    gap: 14px; padding: 6px 24px 10px; min-height: 0; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-height: 0; }
+  .panel h2 { margin: 0 0 8px; font-size: 16px; color: var(--ink); }
+
+  /* 왼쪽 조작 패널 */
+  #controls { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+  fieldset { border: 0; margin: 0; padding: 0; }
+  legend, .lbl { font-weight: bold; color: var(--ink); font-size: 14px; margin-bottom: 4px; padding: 0; }
+  .radio { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+  .radio:hover { background: var(--soft); }
+  .radio input { accent-color: var(--green); width: 17px; height: 17px; margin: 0; }
+  .radio.on { background: #E3F0E8; border-color: #B9D8C5; }
+  .radio small { color: var(--gray); }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .val { font-weight: bold; color: var(--green); font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--green); margin: 4px 0 0; }
+  input[type=range]:disabled { opacity: .35; }
+  .dis { opacity: .5; }
+  .note { font-size: 12px; color: var(--gray); }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg label { flex: 1; text-align: center; padding: 6px 0; cursor: pointer; font-size: 14px; }
+  .seg input { display: none; }
+  .seg label.on { background: var(--green); color: #fff; font-weight: bold; }
+  .seg label.on.heat { background: var(--red); }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .btn { border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 8px; padding: 8px 6px;
+    font-size: 14px; cursor: pointer; font-weight: bold; }
+  .btn:hover { background: var(--soft); }
+  .btn.primary { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn.primary:hover { background: #125c3c; }
+  .toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: bold; color: var(--ink); font-size: 14px; }
+  .toggle input { width: 18px; height: 18px; accent-color: var(--green); margin: 0; }
+
+  /* 가운데 온실 */
+  #stage { display: flex; flex-direction: column; gap: 8px; }
+  .stagehead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge { font-weight: bold; font-size: 17px; padding: 6px 14px; border-radius: 999px; color: #fff; white-space: nowrap; }
+  .badge.normal { background: var(--green); }
+  .badge.reduce { background: #4E8A5F; }
+  .badge.hold { background: var(--blue); }
+  .badge.alarm { background: var(--red); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .7; } }
+  .daybox { margin-left: auto; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .daybox b { font-size: 22px; }
+  #svgwrap { flex: 1; min-height: 0; display: flex; }
+  #house { width: 100%; height: 100%; }
+  .readout { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .readout div { background: var(--soft); border-radius: 8px; padding: 6px 8px; text-align: center; }
+  .readout span { display: block; font-size: 12px; color: var(--gray); }
+  .readout b { font-size: 19px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .progress { height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--green); width: 0; }
+
+  /* 오른쪽 그래프·결과 */
+  #results { display: flex; flex-direction: column; gap: 8px; }
+  .chart { flex: 1; min-height: 110px; display: flex; flex-direction: column; }
+  .chart .ct { font-size: 14px; font-weight: bold; color: var(--ink); display: flex; gap: 12px; align-items: baseline; }
+  .chart .ct small { font-weight: normal; color: var(--gray); font-size: 12px; }
+  .chart canvas { flex: 1; width: 100%; min-height: 0; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; background: #FBFCF9; }
+  .card .k { font-size: 13px; color: var(--text); }
+  .card .v { font-size: 26px; font-weight: bold; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .card .v small { font-size: 14px; font-weight: normal; }
+  .card .d { font-size: 13px; font-weight: bold; }
+  .up { color: var(--green); } .down { color: var(--red); } .flat { color: var(--gray); }
+
+  footer { display: flex; align-items: center; gap: 12px; padding: 8px 24px 12px; flex-wrap: wrap; }
+  footer .btn { padding: 10px 18px; font-size: 15px; }
+  .disclaimer { flex: 1; min-width: 300px; background: #FFF8E1; border: 1px solid #E5CF7C; color: var(--ink);
+    border-radius: 8px; padding: 8px 14px; font-size: 14px; }
+
+  /* 모달 */
+  .modal { position: fixed; inset: 0; background: rgba(22, 48, 43, .45); display: none; align-items: center; justify-content: center; z-index: 10; padding: 20px; }
+  .modal.open { display: flex; }
+  .sheet { background: var(--bg); border-radius: 14px; max-width: 1280px; width: 100%; max-height: 100%; overflow: auto; padding: 18px 22px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  .sheet h2 { margin: 0; color: var(--ink); font-size: 22px; }
+  .sheethead { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .sheethead .btn { padding: 7px 12px; }
+  .sheethead .close { margin-left: auto; }
+  #cmpCanvas { width: 100%; height: auto; background: #fff; border: 1px solid var(--line); border-radius: 10px; display: block; }
+  table { border-collapse: collapse; width: 100%; background: #fff; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+  th { background: var(--soft); color: var(--ink); }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .warn { color: var(--red); font-weight: bold; margin: 10px 0; }
+  .params { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 6px 14px; margin-top: 8px; }
+  .params label { display: grid; grid-template-columns: 1fr 86px; gap: 6px; align-items: center; font-size: 13px; background: #fff;
+    border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+  .params label small { display: block; color: var(--gray); font-size: 11px; }
+  .params label.assumed small { color: #9A6B00; }
+  .params input { width: 86px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; text-align: right; }
+  .params input.changed { background: #FFF3C9; border-color: #E5CF7C; }
+
+  /* 노트북 화면 */
+  @media (max-width: 1500px), (max-height: 900px) {
+    body { font-size: 14px; }
+    header { padding: 10px 16px 4px; }
+    header h1 { font-size: 23px; } header p { font-size: 15px; }
+    main { grid-template-columns: 290px minmax(320px, 1fr) minmax(400px, 1.1fr); padding: 4px 16px 8px; gap: 10px; }
+    .panel { padding: 10px 12px; }
+    #controls { gap: 7px; }
+    .radio { padding: 4px 6px; }
+    .card .v { font-size: 21px; }
+    .readout b { font-size: 16px; }
+    footer { padding: 6px 16px 10px; }
+    footer .btn { padding: 8px 14px; }
+  }
+  @media (max-height: 900px) {
+    .compact-hide { display: none; }
+    .note { font-size: 11px; }
+    input[type=range] { margin-top: 2px; }
+  }
+  @media (max-width: 1100px) {
+    main { grid-template-columns: 1fr 1fr; }
+    #results { grid-column: 1 / -1; }
+    .chart { min-height: 150px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>식물환자 관수 시뮬레이터</h1>
+  <p>관수량에 따라 당도와 수량이 어떻게 바뀔까?</p>
+  <span class="tag">교육용 모델 · 실제 재배 결과 아님</span>
+</header>
+
+<main>
+  <!-- 1. 조작 패널 -->
+  <section class="panel" id="controls">
+    <fieldset id="modeSet">
+      <legend>관수 방식</legend>
+      <label class="radio"><input type="radio" name="mode" value="full"> ① 충분히 관수 <small>(100% 고정)</small></label>
+      <label class="radio"><input type="radio" name="mode" value="fixed" checked> ② 고정 감량 <small>(비율 선택)</small></label>
+      <label class="radio"><input type="radio" name="mode" value="brake"> ③ 소리 브레이크 <small>(자동)</small></label>
+    </fieldset>
+
+    <div id="ratioBox">
+      <div class="row"><span class="lbl">관수 비율</span><span class="val" id="ratioVal">70%</span></div>
+      <input type="range" id="ratio" min="40" max="110" step="5" value="70">
+      <div class="note compact-hide">② 고정 감량을 고를 때만 바꿀 수 있어요.</div>
+    </div>
+
+    <div>
+      <div class="lbl">날씨</div>
+      <div class="seg" id="weatherSeg">
+        <label class="on"><input type="radio" name="weather" value="normal" checked>보통</label>
+        <label class="heat"><input type="radio" name="weather" value="heat">폭염</label>
+      </div>
+      <div class="note compact-hide">폭염이면 같은 관수량에서도 스트레스가 더 크게 쌓여요.</div>
+    </div>
+
+    <div>
+      <div class="row"><span class="lbl">재배 기간</span><span class="val" id="daysVal">30일</span></div>
+      <input type="range" id="days" min="7" max="60" step="1" value="30">
+    </div>
+
+    <div>
+      <div class="row"><span class="lbl">고당도 단가 프리미엄 가정</span><span class="val" id="premVal">30%</span></div>
+      <input type="range" id="premium" min="0" max="70" step="5" value="30">
+      <div class="note">참고: 농진청 2002년 고당도 사례 +67%</div>
+    </div>
+
+    <div>
+      <div class="lbl">재생</div>
+      <div class="btns">
+        <button class="btn primary" id="play">▶ 재생</button>
+        <button class="btn" id="pause">⏸ 일시정지</button>
+        <button class="btn" id="skip">⏭ 결과 바로 보기</button>
+        <button class="btn" id="reset">↺ 초기화</button>
+      </div>
+      <div class="row" style="margin-top:6px"><span class="lbl">재생 속도</span><span class="val" id="speedVal">하루 0.4초</span></div>
+      <input type="range" id="speed" min="1" max="10" step="1" value="5">
+    </div>
+
+    <div>
+      <label class="toggle"><input type="checkbox" id="sound"> 🔊 클릭 소리 듣기</label>
+      <div class="note">실제 녹음이 아니라, 시간당 클릭 수를 들리게 만든 <b>예시음(합성음)</b>입니다. 시간을 압축해 들려줘요.</div>
+    </div>
+  </section>
+
+  <!-- 2. 온실 -->
+  <section class="panel" id="stage">
+    <div class="stagehead">
+      <span class="badge normal" id="badge">정상</span>
+      <span class="daybox"><b id="dayNow">1</b> / <span id="dayTotal">30</span>일째</span>
+    </div>
+    <div class="progress"><i id="prog"></i></div>
+    <div id="svgwrap">
+      <svg id="house" viewBox="0 0 600 470" preserveAspectRatio="xMidYMid meet" role="img" aria-label="온실 속 시설 과채 3그루">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#EAF4EE"/><stop offset="1" stop-color="#F7FAF5"/>
+          </linearGradient>
+        </defs>
+        <!-- 온실 틀 -->
+        <path d="M30 400 L30 150 Q300 20 570 150 L570 400 Z" fill="url(#sky)" stroke="#B8C6BC" stroke-width="3"/>
+        <path d="M165 400 L165 88 M300 400 L300 62 M435 400 L435 88" stroke="#D3DED6" stroke-width="2"/>
+        <path d="M30 150 Q300 20 570 150" fill="none" stroke="#9FB2A5" stroke-width="4"/>
+        <!-- 바닥 -->
+        <rect x="20" y="400" width="560" height="62" rx="6" fill="#8B6B4A"/>
+        <rect x="20" y="400" width="560" height="10" fill="#6E5338"/>
+        <g id="plants"></g>
+        <g id="drops"></g>
+        <!-- 센서 -->
+        <g id="sensor" transform="translate(372 372)">
+          <g id="rings"></g>
+          <rect x="-13" y="-10" width="26" height="20" rx="4" fill="#16302B"/>
+          <circle cx="0" cy="0" r="5" fill="#9FE3BF"/>
+          <text x="-20" y="5" text-anchor="end" font-size="13" fill="#16302B" font-weight="bold" stroke="#F7FAF5" stroke-width="4" paint-order="stroke">소리 센서</text>
+        </g>
+        <text x="300" y="455" text-anchor="middle" font-size="13" fill="#F3E9DC">시설 과채 (특정 작물 아님)</text>
+        <text id="dropLabel" x="40" y="392" font-size="13" fill="#2F6DB5" font-weight="bold"></text>
+      </svg>
+    </div>
+    <div class="readout">
+      <div><span>오늘 관수</span><b id="rRatio">-</b></div>
+      <div><span>클릭 (회/시간)</span><b id="rClick">-</b></div>
+      <div><span>스트레스 지수</span><b id="rS">-</b></div>
+      <div><span>당도</span><b id="rBrix">-</b></div>
+    </div>
+  </section>
+
+  <!-- 3. 그래프와 결과 -->
+  <section class="panel" id="results">
+    <div class="chart"><div class="ct">관수 비율 (%) <small id="ratioLegend"></small></div><canvas id="cRatio"></canvas></div>
+    <div class="chart"><div class="ct">시간당 클릭 수 (회/시간) <small>점선: 브레이크 기준 5 · 경보 기준 15</small></div><canvas id="cClick"></canvas></div>
+    <div class="chart"><div class="ct">누적 당도 (Brix) <small>점선: 고당도 기준 8</small></div><canvas id="cBrix"></canvas></div>
+    <div class="cards">
+      <div class="card"><div class="k">당도</div><div class="v" id="kBrix">-</div><div class="d" id="dBrix"></div></div>
+      <div class="card"><div class="k">수량 (일반 대비)</div><div class="v" id="kYield">-</div><div class="d" id="dYield"></div></div>
+      <div class="card"><div class="k">10a당 연 소득</div><div class="v" id="kIncome">-</div><div class="d" id="dIncome"></div></div>
+      <div class="card"><div class="k">물 사용량 (일반 대비)</div><div class="v" id="kWater">-</div><div class="d" id="dWater"></div></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <button class="btn primary" id="openCmp">📊 세 방식 한 번에 비교</button>
+  <button class="btn" id="openAssume">📘 모델 가정과 근거</button>
+  <div class="disclaimer">ⓘ 이 시뮬레이터는 공개 연구 수치에 맞춘 교육용 모델입니다. 실제 재배 결과가 아니며, 파일럿 실험으로 검증할 예정입니다.</div>
+</footer>
+
+<!-- 4. 세 방식 비교 -->
+<div class="modal" id="cmpModal">
+  <div class="sheet">
+    <div class="sheethead">
+      <h2>세 방식 한 번에 비교</h2>
+      <span id="cmpCond" class="note" style="font-size:14px"></span>
+      <button class="btn" id="saveCsv">💾 표 CSV 저장</button>
+      <button class="btn" id="savePng">🖼 비교 화면 PNG 저장</button>
+      <button class="btn close" data-close="cmpModal">✕ 닫기</button>
+    </div>
+    <canvas id="cmpCanvas" width="1600" height="900"></canvas>
+    <p class="warn">⚠ 가정값에 따라 결과가 달라집니다. 소리 브레이크가 항상 유리하도록 맞춘 모델이 아닙니다.</p>
+    <table id="cmpTable"></table>
+  </div>
+</div>
+
+<!-- 5. 모델 가정과 근거 -->
+<div class="modal" id="assumeModal">
+  <div class="sheet">
+    <div class="sheethead">
+      <h2>모델 가정과 근거</h2>
+      <button class="btn" id="resetParams">기본값으로</button>
+      <button class="btn close" data-close="assumeModal">✕ 닫기</button>
+    </div>
+    <h3 style="margin:6px 0;color:var(--ink)">근거로 맞춘 기준값</h3>
+    <table id="evTable"></table>
+    <h3 style="margin:14px 0 4px;color:var(--ink)">계산 규칙 (하루 단위)</h3>
+    <ol style="margin:0;padding-left:20px;font-size:14px">
+      <li>부족분 d = max(0, 1 − 관수비율). 폭염이면 d × 가중치 + 기본 부족분.</li>
+      <li>스트레스 S += 축적계수 × d × (1 − S) − 회복계수 × (1 − d) × S (0~1).</li>
+      <li>당도 = 기준 + 최대상승폭 × (1 − e<sup>−x/τ</sup>). x는 S가 하한 이상으로 연속 며칠 이상 "지속"된 날의 (S − 하한) 합. 짧은 스트레스는 당도를 못 올림.</li>
+      <li>수량: 매일 1 − a·S − b·max(0, S − 임계)², 기간 평균.</li>
+      <li>클릭 = 정상 + 최대 × S<sup>지수</sup> × 피로(심한 건조가 오래가면 감소) × (1 + 노이즈). 시드 고정.</li>
+      <li>소득 = 2,437만 + (총수입 − 4,202만). 총수입 = 4,202만 × 수량비율 × (1 + 프리미엄 × h(Brix)), h는 5 Brix 이하 0 → 8 이상 1. 경영비는 같다고 가정. 재배 기간 결과가 한 해를 대표한다고 가정.</li>
+      <li>소리 브레이크: 100%에서 하루 10%p씩 감량. 같은 날씨의 대조 구역(100%)보다 클릭이 기준 이상 늘면 한 계단 복귀 후 유지. 클릭이 경보 기준을 넘으면 그날 바로 100%, 며칠 유지 후 다시 감량.</li>
+    </ol>
+    <h3 style="margin:14px 0 4px;color:var(--ink)">계수 (수정하면 바로 다시 계산) <small class="note">노란 글씨 = 가정</small></h3>
+    <label class="note" style="display:inline-flex;gap:6px;align-items:center;font-size:13px">난수 시드 <input type="number" id="seed" value="42" style="width:80px"></label>
+    <div class="params" id="params"></div>
+  </div>
+</div>
+
+<script src="model.js"></script>
+<script>
+(function () {
+  'use strict';
+  var M = window.PlantModel;
+  var $ = function (id) { return document.getElementById(id); };
+  var C = { ink: '#16302B', text: '#3E4B46', green: '#17704A', blue: '#2F6DB5', red: '#B23A26', gray: '#8F978E', line: '#DDE1D8' };
+
+  var state = { t: 0, timer: null, sim: null, params: {} };
+
+  // ── 입력 읽기 ──
+  function radioVal(name) { return document.querySelector('input[name=' + name + ']:checked').value; }
+  function opts() {
+    return {
+      mode: radioVal('mode'),
+      ratio: +$('ratio').value / 100,
+      weather: radioVal('weather'),
+      days: +$('days').value,
+      premium: +$('premium').value / 100,
+      seed: +$('seed').value || 0,
+      params: state.params
+    };
+  }
+
+  function recompute(keepT) {
+    var o = opts();
+    state.sim = M.run(o);
+    if (!keepT) state.t = 0;
+    state.t = Math.min(state.t, o.days - 1);
+    render();
+  }
+
+  function syncLabels() {
+    var mode = radioVal('mode');
+    $('ratio').disabled = mode !== 'fixed';
+    $('ratioBox').classList.toggle('dis', mode !== 'fixed');
+    $('ratioVal').textContent = mode === 'full' ? '100%' : mode === 'brake' ? '자동' : $('ratio').value + '%';
+    $('daysVal').textContent = $('days').value + '일';
+    $('premVal').textContent = $('premium').value + '%';
+    $('speedVal').textContent = '하루 ' + (2 / +$('speed').value).toFixed(1) + '초';
+    document.querySelectorAll('#modeSet .radio').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); });
+    document.querySelectorAll('#weatherSeg label').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); });
+  }
+
+  // ── 그래프 ──
+  function setupCanvas(cv) {
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var g = cv.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return { g: g, w: w, h: h };
+  }
+
+  function lineChart(cv, cfg) {
+    var s = setupCanvas(cv), g = s.g, W = s.w, H = s.h;
+    if (W < 10 || H < 10) return;
+    var L = 40, R = 12, T = 8, B = 20, pw = W - L - R, ph = H - T - B;
+    var n = cfg.days, ymin = cfg.ymin, ymax = cfg.ymax;
+    var X = function (i) { return L + (n <= 1 ? 0 : i / (n - 1)) * pw; };
+    var Y = function (v) { return T + ph - (v - ymin) / (ymax - ymin) * ph; };
+    g.font = '11px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+    g.fillStyle = C.gray; g.strokeStyle = '#ECEFE8'; g.lineWidth = 1;
+    cfg.yticks.forEach(function (v) {
+      g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(W - R, Y(v)); g.stroke();
+      g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillText(v, L - 5, Y(v));
+    });
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    var step = n > 40 ? 10 : n > 20 ? 5 : n > 10 ? 2 : 1;
+    for (var d = 1; d <= n; d++) if (d === 1 || d % step === 0) g.fillText(d + '일', X(d - 1), T + ph + 4);
+    g.strokeStyle = C.line; g.beginPath(); g.moveTo(L, T); g.lineTo(L, T + ph); g.lineTo(W - R, T + ph); g.stroke();
+    (cfg.refs || []).forEach(function (r) {
+      g.save(); g.setLineDash([5, 4]); g.strokeStyle = r.color; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(L, Y(r.v)); g.lineTo(W - R, Y(r.v)); g.stroke(); g.restore();
+      g.fillStyle = r.color; g.textAlign = 'right'; g.textBaseline = 'bottom'; g.font = 'bold 11px "Malgun Gothic", sans-serif';
+      g.fillText(r.label, W - R - 2, Y(r.v) - 1);
+      g.font = '11px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+    });
+    var upto = cfg.upto;
+    cfg.series.forEach(function (sr) {
+      g.save(); g.strokeStyle = sr.color; g.lineWidth = sr.width || 2.5; if (sr.dash) g.setLineDash(sr.dash);
+      g.beginPath();
+      for (var i = 0; i <= upto; i++) {
+        var v = Math.max(ymin, Math.min(ymax, sr.data[i]));
+        if (sr.step && i > 0) g.lineTo(X(i), Y(Math.max(ymin, Math.min(ymax, sr.data[i - 1]))));
+        if (i === 0) g.moveTo(X(i), Y(v)); else g.lineTo(X(i), Y(v));
+      }
+      g.stroke(); g.restore();
+      if (!sr.noDot) { g.fillStyle = sr.color; g.beginPath(); g.arc(X(upto), Y(Math.max(ymin, Math.min(ymax, sr.data[upto]))), 4, 0, 7); g.fill(); }
+    });
+    (cfg.marks || []).forEach(function (m) {
+      if (m.i > upto) return;
+      g.fillStyle = C.red; g.beginPath(); g.moveTo(X(m.i), T + 2); g.lineTo(X(m.i) - 5, T - 6 + 2); g.lineTo(X(m.i) + 5, T - 6 + 2); g.fill();
+      g.save(); g.strokeStyle = 'rgba(178,58,38,.25)'; g.lineWidth = 6; g.beginPath(); g.moveTo(X(m.i), T); g.lineTo(X(m.i), T + ph); g.stroke(); g.restore();
+    });
+  }
+
+  function niceMax(v, min) { var m = Math.max(min, v * 1.15); var st = m > 40 ? 10 : 5; return Math.ceil(m / st) * st; }
+  function ticks(max, n) { var st = max / n, a = []; for (var i = 0; i <= n; i++) a.push(Math.round(i * st * 10) / 10); return a; }
+
+  function drawCharts() {
+    var res = state.sim.res, t = state.t, n = res.days, P = res.params;
+    var pct = res.ratio.map(function (r) { return r * 100; });
+    var marks = []; res.alarm.forEach(function (a, i) { if (a) marks.push({ i: i }); });
+    lineChart($('cRatio'), { days: n, upto: t, ymin: 0, ymax: 120, yticks: [0, 40, 70, 100, 120],
+      refs: [{ v: 100, label: '100%', color: C.gray }],
+      series: [{ data: pct, color: C.blue, step: true }] });
+    var cmax = niceMax(Math.max.apply(null, res.clicks.concat(res.ctrlClicks)), P.alarmLine + 5);
+    var ser = [];
+    if (res.mode === 'brake') ser.push({ data: res.ctrlClicks, color: C.gray, width: 1.5, dash: [2, 3], noDot: true });
+    ser.push({ data: res.clicks, color: C.ink });
+    lineChart($('cClick'), { days: n, upto: t, ymin: 0, ymax: cmax, yticks: ticks(cmax, 4),
+      refs: [{ v: P.brakeLine, label: '브레이크 ' + P.brakeLine, color: C.blue }, { v: P.alarmLine, label: '경보 ' + P.alarmLine, color: C.red }],
+      series: ser, marks: marks });
+    var bmax = Math.max(10, Math.ceil(P.baseBrix + P.maxBrixRise + 0.5));
+    lineChart($('cBrix'), { days: n, upto: t, ymin: 3, ymax: bmax, yticks: [3, 5, 8, bmax],
+      refs: [{ v: P.highBrix, label: '고당도 ' + P.highBrix, color: C.green }, { v: P.baseBrix, label: '일반 ' + P.baseBrix, color: C.gray }],
+      series: [{ data: res.brix, color: C.green }] });
+    $('ratioLegend').textContent = res.mode === 'brake' ? '클릭 그래프 회색 점선: 대조 구역(100%)' : '';
+  }
+
+  // ── 온실 그림 ──
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(SVGNS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  var FRUIT_HUE = [6, 24, 44]; // 빨강·주황·노랑
+  function drawHouse(S, ratio, clicks, brix, alarm) {
+    var g = $('plants'); g.innerHTML = '';
+    var droop = S * 55;
+    [150, 300, 450].forEach(function (x0, p) {
+      var top = 140 + S * 30 + p * 6;
+      var bend = S * 22 * (p % 2 ? -1 : 1);
+      var stem = 'M' + x0 + ' 400 Q' + (x0 + bend) + ' ' + ((400 + top) / 2) + ' ' + (x0 + bend * 0.6) + ' ' + top;
+      el('path', { d: stem, stroke: '#3C6E3A', 'stroke-width': 7, fill: 'none', 'stroke-linecap': 'round' }, g);
+      for (var j = 0; j < 5; j++) {
+        var yy = 380 - j * ((400 - top) / 5.2), side = j % 2 ? 1 : -1;
+        var xx = x0 + bend * (1 - (yy - top) / (400 - top)) * 0.9;
+        var lf = el('g', { transform: 'translate(' + xx + ' ' + yy + ') rotate(' + (side > 0 ? -35 + droop : 215 - droop) + ')' }, g);
+        var green = 'hsl(' + (118 - S * 50) + ',' + (45 - S * 15) + '%,' + (36 + S * 8) + '%)';
+        el('path', { d: 'M0 0 Q22 -14 48 0 Q22 12 0 0 Z', fill: green, stroke: '#2E5A2C', 'stroke-width': 1 }, lf);
+        el('path', { d: 'M2 0 L44 0', stroke: '#2E5A2C', 'stroke-width': 1, opacity: .5 }, lf);
+      }
+      var fr = 15 * (1 - 0.35 * S);
+      var light = Math.max(30, 58 - (brix - 5) * 6);
+      for (var k = 0; k < 3; k++) {
+        var fy = 330 - k * 62, fx = x0 + (k % 2 ? 26 : -26) + bend * 0.4;
+        el('path', { d: 'M' + (x0 + bend * 0.35) + ' ' + (fy - 22) + ' L' + fx + ' ' + (fy - fr + 1), stroke: '#3C6E3A', 'stroke-width': 2 }, g);
+        var hue = FRUIT_HUE[(p + k) % 3];
+        el('circle', { cx: fx, cy: fy, r: fr, fill: 'hsl(' + hue + ',78%,' + light + '%)', stroke: 'hsl(' + hue + ',70%,' + (light - 14) + '%)', 'stroke-width': 1.5 }, g);
+        el('circle', { cx: fx - fr * 0.35, cy: fy - fr * 0.35, r: fr * 0.25, fill: '#fff', opacity: .45 }, g);
+        el('path', { d: 'M' + (fx - 5) + ' ' + (fy - fr) + ' L' + fx + ' ' + (fy - fr - 5) + ' L' + (fx + 5) + ' ' + (fy - fr) + ' Z', fill: '#3C6E3A' }, g);
+      }
+    });
+    // 물방울 (관수 10%당 1개)
+    var dg = $('drops'); dg.innerHTML = '';
+    var nd = Math.round(ratio * 10);
+    for (var i = 0; i < nd; i++) {
+      var dx = 50 + i * 48, dy = 428 + (i % 2) * 10;
+      el('path', { d: 'M' + dx + ' ' + (dy - 11) + ' Q' + (dx + 8) + ' ' + (dy - 1) + ' ' + dx + ' ' + (dy + 4) + ' Q' + (dx - 8) + ' ' + (dy - 1) + ' ' + dx + ' ' + (dy - 11) + ' Z',
+        fill: '#5FA8E8', stroke: '#2F6DB5', 'stroke-width': 1.2 }, dg);
+    }
+    $('dropLabel').textContent = '물방울 ' + nd + '개 = 관수 ' + Math.round(ratio * 100) + '%';
+    // 음파 고리 (클릭 수에 비례)
+    var rg = $('rings'); rg.innerHTML = '';
+    var base = 16 + Math.min(clicks, 45) * 2.6;
+    var col = alarm ? C.red : clicks >= 5 ? C.blue : C.green;
+    for (var q = 0; q < 3; q++) {
+      el('circle', { cx: 0, cy: 0, r: base * (0.45 + q * 0.3), fill: 'none', stroke: col, 'stroke-width': 3 - q * 0.6, opacity: (0.75 - q * 0.2).toFixed(2) }, rg);
+    }
+  }
+
+  // ── 표시 ──
+  var BADGE = { normal: '정상', reduce: '감량 중', hold: '멈춤 (소리 증가)', alarm: '경보 (급증)' };
+  function sign(v, d) { return (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v).toFixed(d); }
+  // words: { inc: 늘었을 때 말, dec: 줄었을 때 말 }
+  function setDelta(id, v, d, unit, goodWhenUp, words) {
+    var e = $(id), flat = Math.abs(v) < Math.pow(10, -d) / 2;
+    e.className = 'd ' + (flat ? 'flat' : (v > 0) === goodWhenUp ? 'up' : 'down');
+    var w = words ? ' ' + (v > 0 ? words.inc : words.dec) : '';
+    e.textContent = (flat ? '변화 없음' : (v > 0 ? '▲ ' : '▼ ') + sign(v, d) + unit + w) + ' (일반 대비)';
+  }
+  function fmt(n) { return Math.round(n).toLocaleString('ko-KR'); }
+
+  function render() {
+    var res = state.sim.res, t = state.t, sm = M.summarize(res, state.sim.base, t);
+    $('dayNow').textContent = t + 1; $('dayTotal').textContent = res.days;
+    $('prog').style.width = ((t + 1) / res.days * 100) + '%';
+    var ph = res.phase[t], b = $('badge');
+    b.className = 'badge ' + ph; b.textContent = BADGE[ph];
+    $('rRatio').textContent = Math.round(res.ratio[t] * 100) + '%';
+    $('rClick').textContent = res.clicks[t].toFixed(1);
+    $('rS').textContent = res.S[t].toFixed(2);
+    $('rBrix').textContent = res.brix[t].toFixed(1);
+    drawHouse(res.S[t], res.ratio[t], res.clicks[t], res.brix[t], res.alarm[t]);
+    drawCharts();
+
+    $('kBrix').innerHTML = sm.brix.toFixed(1) + ' <small>Brix' + (sm.brix >= res.params.highBrix ? ' · 고당도' : '') + '</small>';
+    setDelta('dBrix', sm.brixDelta, 1, '', true);
+    $('kYield').innerHTML = sm.yieldPct.toFixed(1) + '<small>%</small>';
+    setDelta('dYield', sm.yieldPct - 100, 1, '%p', true, { inc: '증가', dec: '감소' });
+    $('kIncome').innerHTML = fmt(sm.income) + ' <small>만 원</small>';
+    setDelta('dIncome', sm.incomeDelta, 0, '만 원', true, { inc: '이익', dec: '손해' });
+    $('kWater').innerHTML = sm.waterPct.toFixed(0) + '<small>%</small>';
+    setDelta('dWater', sm.waterPct - 100, 0, '%p', false, { inc: '더 씀', dec: '절약' });
+    updateSoundRate();
+  }
+
+  // ── 재생 ──
+  function stop() { if (state.timer) clearInterval(state.timer); state.timer = null; }
+  function play() {
+    stop();
+    if (state.t >= state.sim.res.days - 1) state.t = 0;
+    render();
+    state.timer = setInterval(function () {
+      if (state.t >= state.sim.res.days - 1) { stop(); return; }
+      state.t++; render();
+    }, 2000 / +$('speed').value);
+  }
+  $('play').onclick = play;
+  $('pause').onclick = stop;
+  $('skip').onclick = function () { stop(); state.t = state.sim.res.days - 1; render(); };
+  $('reset').onclick = function () { stop(); state.t = 0; render(); };
+  $('speed').oninput = function () { syncLabels(); if (state.timer) play(); };
+
+  ['ratio', 'days', 'premium'].forEach(function (id) {
+    $(id).oninput = function () { syncLabels(); recompute(true); };
+  });
+  document.querySelectorAll('input[name=mode], input[name=weather]').forEach(function (r) {
+    r.onchange = function () { syncLabels(); recompute(true); };
+  });
+  $('seed').onchange = function () { recompute(true); };
+
+  // ── 클릭 소리 (WebAudio 합성 예시음) ──
+  var audio = { ctx: null, timer: null, perSec: 0 };
+  function clickSound() {
+    var ctx = audio.ctx, now = ctx.currentTime, len = Math.floor(ctx.sampleRate * 0.006);
+    var buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (len / 5));
+    var src = ctx.createBufferSource(); src.buffer = buf;
+    var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2500;
+    var gn = ctx.createGain(); gn.gain.value = 0.9;
+    src.connect(hp); hp.connect(gn); gn.connect(ctx.destination); src.start(now);
+  }
+  function updateSoundRate() {
+    // 시간 압축: 시간당 클릭 1회 → 초당 0.25회
+    audio.perSec = state.sim ? state.sim.res.clicks[state.t] * 0.25 : 0;
+  }
+  $('sound').onchange = function () {
+    if (this.checked) {
+      if (!audio.ctx) audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      audio.ctx.resume();
+      updateSoundRate();
+      audio.timer = setInterval(function () { if (Math.random() < audio.perSec * 0.05) clickSound(); }, 50);
+    } else { clearInterval(audio.timer); audio.timer = null; }
+  };
+
+  // ── 세 방식 비교 ──
+  var cmpData = null;
+  function condText(o) {
+    return '조건: ' + (o.weather === 'heat' ? '폭염' : '보통') + ' · ' + o.days + '일 · 고당도 프리미엄 ' + Math.round(o.premium * 100) + '% · 시드 ' + o.seed;
+  }
+  function openCompare() {
+    stop();
+    var o = opts();
+    cmpData = { o: o, groups: M.compareAll(o) };
+    $('cmpCond').textContent = condText(o);
+    var rows = [['방식', '당도 (Brix)', '일반 대비 당도', '수량 (일반 대비 %)', '10a당 연 소득 (만 원)', '일반 대비 소득 (만 원)', '물 사용량 (%)', '경보 (회)']];
+    cmpData.groups.forEach(function (g) {
+      var s = g.summary;
+      rows.push([g.name, s.brix.toFixed(2), sign(s.brixDelta, 2), s.yieldPct.toFixed(1), fmt(s.income), sign(s.incomeDelta, 0), s.waterPct.toFixed(0), s.alarms]);
+    });
+    cmpData.rows = rows;
+    $('cmpTable').innerHTML = rows.map(function (r, i) {
+      return '<tr>' + r.map(function (c, j) { return i === 0 ? '<th>' + c + '</th>' : '<td' + (j ? ' class="n"' : '') + '>' + c + '</td>'; }).join('') + '</tr>';
+    }).join('');
+    drawCompare($('cmpCanvas'), cmpData);
+    $('cmpModal').classList.add('open');
+  }
+  function drawCompare(cv, data) {
+    var g = cv.getContext('2d'), W = cv.width, H = cv.height;
+    var F = '"Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+    g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+    g.fillStyle = C.ink; g.font = 'bold 40px ' + F; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.fillText('세 방식 한 번에 비교', 50, 34);
+    g.fillStyle = C.text; g.font = '24px ' + F; g.fillText(condText(data.o), 50, 88);
+    var cols = [C.gray, C.blue, C.green];
+    var metrics = [
+      { name: '당도 (Brix)', get: function (s) { return s.brix; }, f: function (v) { return v.toFixed(1); }, ref: data.o.params && data.o.params.highBrix || M.DEFAULTS.highBrix, refL: '고당도' },
+      { name: '수량 (일반 대비 %)', get: function (s) { return s.yieldPct; }, f: function (v) { return v.toFixed(1) + '%'; } },
+      { name: '10a당 연 소득 (만 원)', get: function (s) { return s.income; }, f: fmt },
+      { name: '물 사용량 (일반 대비 %)', get: function (s) { return s.waterPct; }, f: function (v) { return v.toFixed(0) + '%'; } }
+    ];
+    var pw = (W - 100) / 4, top = 150, ch = 520;
+    metrics.forEach(function (m, mi) {
+      var x0 = 50 + mi * pw, vals = data.groups.map(function (gr) { return m.get(gr.summary); });
+      var vmax = Math.max.apply(null, vals.concat(m.ref || 0)) * 1.15;
+      g.fillStyle = '#F5F6F1'; g.fillRect(x0 + 8, top, pw - 16, ch + 60);
+      g.fillStyle = C.ink; g.font = 'bold 24px ' + F; g.textAlign = 'center'; g.fillText(m.name, x0 + pw / 2, top + 14);
+      var bt = top + 70, bh = ch - 90, bw = (pw - 70) / 3;
+      vals.forEach(function (v, i) {
+        var h = Math.max(0, v / vmax * bh), bx = x0 + 35 + i * bw;
+        g.fillStyle = cols[i]; g.fillRect(bx + 6, bt + bh - h, bw - 12, h);
+        g.fillStyle = C.ink; g.font = 'bold 22px ' + F; g.textBaseline = 'bottom'; g.fillText(m.f(v), bx + bw / 2, bt + bh - h - 6);
+        g.textBaseline = 'top'; g.font = 'bold 22px ' + F; g.fillText(['①', '②', '③'][i], bx + bw / 2, bt + bh + 10);
+      });
+      if (m.ref) {
+        var ry = bt + bh - m.ref / vmax * bh;
+        g.save(); g.setLineDash([8, 6]); g.strokeStyle = C.green; g.lineWidth = 2; g.beginPath(); g.moveTo(x0 + 30, ry); g.lineTo(x0 + pw - 30, ry); g.stroke(); g.restore();
+        g.fillStyle = C.green; g.font = '18px ' + F; g.textAlign = 'right'; g.textBaseline = 'bottom'; g.fillText(m.refL + ' ' + m.ref, x0 + pw - 30, ry - 3);
+        g.textAlign = 'center';
+      }
+      g.textBaseline = 'top';
+    });
+    var ly = top + ch + 90;
+    g.textAlign = 'left'; g.font = '24px ' + F;
+    data.groups.forEach(function (gr, i) {
+      g.fillStyle = cols[i]; g.fillRect(50 + i * 420, ly, 26, 26);
+      g.fillStyle = C.ink; g.fillText(gr.name, 86 + i * 420, ly);
+    });
+    g.fillStyle = C.red; g.font = 'bold 22px ' + F; g.fillText('⚠ 가정값에 따라 결과가 달라집니다.', 50, ly + 50);
+    g.fillStyle = C.text; g.font = '20px ' + F;
+    g.fillText('공개 연구 수치에 맞춘 교육용 모델입니다. 실제 재배 결과가 아니며, 파일럿 실험으로 검증할 예정입니다. — 식물환자 관수 시뮬레이터', 50, ly + 84);
+  }
+  function download(name, href) {
+    var a = document.createElement('a'); a.href = href; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  $('openCmp').onclick = openCompare;
+  $('saveCsv').onclick = function () {
+    var csv = cmpData.rows.concat([[condText(cmpData.o)], ['가정값에 따라 결과가 달라집니다. 교육용 모델이며 실제 재배 결과가 아닙니다.']])
+      .map(function (r) { return r.map(function (c) { c = String(c); return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(','); }).join('\r\n');
+    var url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+    download('세방식비교.csv', url);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  };
+  $('savePng').onclick = function () { download('세방식비교.png', $('cmpCanvas').toDataURL('image/png')); };
+
+  // ── 모델 가정과 근거 ──
+  $('evTable').innerHTML = '<tr><th>항목</th><th>값</th><th>출처</th></tr>' + M.EVIDENCE.map(function (r) {
+    return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>';
+  }).join('');
+  function buildParams() {
+    var box = $('params'); box.innerHTML = '';
+    Object.keys(M.DEFAULTS).forEach(function (k) {
+      var meta = M.PARAM_META[k] || [k, ''], assumed = /가정/.test(meta[1]);
+      var lab = document.createElement('label');
+      if (assumed) lab.className = 'assumed';
+      lab.innerHTML = '<span>' + meta[0] + '<small>' + meta[1] + '</small></span>';
+      var inp = document.createElement('input');
+      inp.type = 'number'; inp.step = 'any'; inp.value = k in state.params ? state.params[k] : M.DEFAULTS[k];
+      inp.classList.toggle('changed', k in state.params);
+      inp.onchange = function () {
+        var v = parseFloat(inp.value);
+        if (isNaN(v) || v === M.DEFAULTS[k]) { delete state.params[k]; inp.value = M.DEFAULTS[k]; } else state.params[k] = v;
+        inp.classList.toggle('changed', k in state.params);
+        recompute(true);
+      };
+      lab.appendChild(inp); box.appendChild(lab);
+    });
+  }
+  buildParams();
+  $('resetParams').onclick = function () { state.params = {}; $('seed').value = 42; buildParams(); recompute(true); };
+  $('openAssume').onclick = function () { $('assumeModal').classList.add('open'); };
+  document.querySelectorAll('[data-close]').forEach(function (b) { b.onclick = function () { $(b.dataset.close).classList.remove('open'); }; });
+  document.querySelectorAll('.modal').forEach(function (m) { m.onclick = function (e) { if (e.target === m) m.classList.remove('open'); }; });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(function (m) { m.classList.remove('open'); }); });
+
+  window.addEventListener('resize', function () { if (state.sim) drawCharts(); });
+  syncLabels();
+  recompute(false);
+})();
+</script>
+</body>
+</html>
