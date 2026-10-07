@@ -95,6 +95,13 @@ var finiteAll = true;
 });
 check('모든 결과가 유한한 숫자', finiteAll);
 
+// 10. index.html 안의 계산 로직이 model.js와 같은지
+console.log('10. index.html 안의 계산 로직이 model.js와 같음');
+var fs = require('fs'), path = require('path');
+var html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+var model = fs.readFileSync(path.join(__dirname, 'model.js'), 'utf8');
+check('같음 (다르면 node build.js 실행)', require('./build.js').inlined(html, model) === html);
+
 // 참고: 세 방식 비교
 ['normal', 'heat'].forEach(function (w) {
   console.log('\n[참고] 세 방식 비교 (30일, ' + (w === 'heat' ? '폭염' : '보통') + ', 시드 42)');
