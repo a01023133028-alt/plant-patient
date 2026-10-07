@@ -18,7 +18,7 @@
     // ── 당도 ──
     baseBrix: 5.0,          // 일반 당도 약 5 Brix (범위 3~7) - 이소셜타임즈, 전남농업기술원(2004)
     highBrix: 8.0,          // 고당도 기준 8 Brix 이상 - 이소셜타임즈 (대저 짭짤이 기준)
-    maxBrixRise: 4.0,       // 최대 상승폭 (Brix) - 가정 (5 → 9, 고당도 기준을 넘을 수 있는 폭)
+    maxBrixRise: 1.22,      // 최대 상승폭 (Brix) - Plants 2024 원문에 맞춤 (물 47%에서 약 +1.0 = +20%, 토마토 관수 연구 +12~26% 범위)
     sustainS: 0.15,         // "스트레스가 있다"고 보는 S 하한 - 가정
     sustainMinDays: 3,      // 이 날 수 이상 연속돼야 당도가 오르기 시작 - 가정 ("지속될 때만" 상승, Plants 2024)
     brixTau: 8,             // 포화 함수 g(x)=1-e^(-x/τ)의 τ (스트레스·일) - 가정
@@ -30,9 +30,9 @@
     heatBaseDeficit: 0.05,  // 폭염 시 100% 관수에서도 생기는 부족분 (증산 증가) - 가정
 
     // ── 수량 ──
-    yieldLinear: 0.30,      // S 1당 수량 감소 비율 - 가정 (70% 관수 시 −12% 근처가 되도록, Plants 2024)
+    yieldLinear: 0.193,     // S 1당 수량 감소 비율 - Plants 2024 원문에 맞춤 (물 47%에서 −12%)
     yieldQuadThreshold: 0.45, // 이 S를 넘는 강한 스트레스는 제곱항으로 추가 감소 - 가정
-    yieldQuad: 2.5,         // 제곱항 계수 - 가정 (최대 −24% 대과형 근거, Plants 2024)
+    yieldQuad: 0,           // 강한 스트레스 제곱항 - 토마토는 근거 부족으로 0 (다른 작물은 2.5, 가정)
 
     // ── 클릭 소리 ──
     clickBase: 0.5,         // 정상 식물 시간당 1회 미만 - Khait et al., Cell (2023)
@@ -281,8 +281,24 @@
 
   var CROPS = {
     tomato: {
-      name: '토마토 (기본)', fruit: 'tomato', params: {},
-      note: '발표 기본 모델. 프롬프트 기준(70%: 당도 +1.5 이상, 수량 −8~16%)에 맞춤. 원문과 비교하면 수량을 더 크게 깎는 쪽(보수적)입니다.',
+      name: '토마토 (논문 기준, 기본)', fruit: 'tomato',
+      params: {},
+      note: '발표 기본 모델. Plants (2024) 원문에 맞춤: 물 47%에서 수량 −12%(통계적으로 유의하지 않음), 당도 +1.0 정도.',
+      evidence: [
+        ['수량 (물 47% 공급, 방울형 2020)', '−12% (통계적으로 유의하지 않음)', 'Alomari-Mheidat et al., Plants 13:128 (2024)', '원문 확인'],
+        ['과실 무게', '평균 −7~15%', 'Plants (2024)', '원문 확인'],
+        ['당도', '스트레스가 지속될 때만 증가 (그래프로만 제시, 증가 폭 수치 없음)', 'Plants (2024)', '원문 확인'],
+        ['당도 증가 폭', '+12~26% (방울토마토·부분근권건조 연구)', '토마토 관수 연구들', '검색 요약'],
+        ['강한 스트레스의 추가 손해', '근거 부족 → 제곱항 없앰', '-', '가정']
+      ].concat(CLICK_EVIDENCE),
+      targets: [
+        { label: '물 47%: 수량 −5~−15% (논문 −12%)', ratio: 0.47, days: 30, metric: 'yieldPct', lo: 85, hi: 95, source: 'Plants (2024) 원문', check: true },
+        { label: '물 47%: 당도 +0.6~1.3 Brix (+12~26%)', ratio: 0.47, days: 30, metric: 'brixDelta', lo: 0.6, hi: 1.3, source: '토마토 관수 연구 (검색 요약)', check: true }
+      ]
+    },
+    tomatoDraft: {
+      name: '토마토 (처음 초안)', fruit: 'tomato', params: { maxBrixRise: 4.0, yieldLinear: 0.30, yieldQuad: 2.5 },
+      note: '처음 프롬프트 기준(70%: 당도 +1.5 이상, 수량 −8~16%)에 맞춘 설정. 논문의 −12%는 물 47% 조건이었으므로 원문보다 당도도 수량 손해도 크게 나옵니다. 비교용.',
       evidence: [
         ['일반 당도', '약 5 Brix (일반 범위 3~7)', '이소셜타임즈, 전남농업기술원(2004)', '검색 요약'],
         ['고당도 기준', '8 Brix 이상만 "대저 짭짤이"', '이소셜타임즈 (대저 짭짤이)', '검색 요약'],
@@ -300,25 +316,9 @@
         { label: '참고: 물 47%에서 수량 −12% (유의하지 않음)', ratio: 0.47, days: 30, metric: 'yieldPct', lo: 85, hi: 95, source: 'Plants (2024) 원문', check: false }
       ]
     },
-    tomatoPaper: {
-      name: '토마토 (논문 기준)', fruit: 'tomato',
-      params: { maxBrixRise: 1.22, yieldLinear: 0.193, yieldQuad: 0 },
-      note: 'Plants (2024) 원문에 맞춘 설정: 물 47%에서 수량 −12%, 당도 +1.0 정도. 기본 설정보다 물을 줄여도 손해가 작고 당도도 덜 오릅니다.',
-      evidence: [
-        ['수량 (물 47% 공급, 방울형 2020)', '−12% (통계적으로 유의하지 않음)', 'Alomari-Mheidat et al., Plants 13:128 (2024)', '원문 확인'],
-        ['과실 무게', '평균 −7~15%', 'Plants (2024)', '원문 확인'],
-        ['당도', '스트레스가 지속될 때만 증가 (그래프로만 제시, 증가 폭 수치 없음)', 'Plants (2024)', '원문 확인'],
-        ['당도 증가 폭', '+12~26% (방울토마토·부분근권건조 연구)', '토마토 관수 연구들', '검색 요약'],
-        ['강한 스트레스의 추가 손해', '근거 부족 → 제곱항 없앰', '-', '가정']
-      ].concat(CLICK_EVIDENCE),
-      targets: [
-        { label: '물 47%: 수량 −5~−15% (논문 −12%)', ratio: 0.47, days: 30, metric: 'yieldPct', lo: 85, hi: 95, source: 'Plants (2024) 원문', check: true },
-        { label: '물 47%: 당도 +0.6~1.3 Brix (+12~26%)', ratio: 0.47, days: 30, metric: 'brixDelta', lo: 0.6, hi: 1.3, source: '토마토 관수 연구 (검색 요약)', check: true }
-      ]
-    },
     cherry: {
       name: '방울토마토', fruit: 'cherry',
-      params: { baseBrix: 7, highBrix: 9, maxBrixRise: 1.7, yieldLinear: 0.255 },
+      params: { baseBrix: 7, highBrix: 9, maxBrixRise: 1.7, yieldLinear: 0.255, yieldQuad: 2.5 },
       note: '당도 증가 +12~16%, 가을 작기 수량 감소 5~20%에 맞춤.',
       evidence: [
         ['일반 당도', '7 Brix로 둠', '-', '가정'],
@@ -335,7 +335,7 @@
     },
     strawberry: {
       name: '딸기', fruit: 'strawberry',
-      params: { baseBrix: 9, highBrix: 11, maxBrixRise: 0.4, yieldLinear: 0.84 },
+      params: { baseBrix: 9, highBrix: 11, maxBrixRise: 0.4, yieldLinear: 0.84, yieldQuad: 2.5 },
       note: '수량은 크게 줄고, 당도는 연구에 따라 증가·변화 없음·감소가 모두 보고됨. 당도 상승을 아주 작게 잡음. 물을 줄여 얻는 것이 적은 작물.',
       evidence: [
         ['일반 당도', '9 Brix로 둠', '-', '가정'],
@@ -352,7 +352,7 @@
     },
     melon: {
       name: '멜론', fruit: 'melon',
-      params: { baseBrix: 11, highBrix: 14, maxBrixRise: 3.1, yieldLinear: 0.4 },
+      params: { baseBrix: 11, highBrix: 14, maxBrixRise: 3.1, yieldLinear: 0.4, yieldQuad: 2.5 },
       note: '50% 관수에서 당도 +23%, 상품 수량 −30%(주로 과실 크기 감소)에 맞춤. 품종에 따라 수량 감소가 −24~43%로 다름.',
       evidence: [
         ['일반 당도', '11 Brix로 둠', '-', '가정'],
@@ -369,7 +369,7 @@
     },
     citrus: {
       name: '감귤 (타이벡 피복)', fruit: 'citrus',
-      params: { baseBrix: 10, highBrix: 11, maxBrixRise: 3.8, yieldLinear: 0.23, sustainMinDays: 25, stressAccum: 0.25 },
+      params: { baseBrix: 10, highBrix: 11, maxBrixRise: 3.8, yieldLinear: 0.23, yieldQuad: 2.5, sustainMinDays: 25, stressAccum: 0.25 },
       note: '타이벡으로 빗물을 막아 물을 줄이는 실제 재배법. 피복 후 30~60일 지나야 스트레스가 시작돼 재배 기간을 60일로 늘려 보세요. 관수 50%를 "피복"으로 봄.',
       evidence: [
         ['노지감귤 평균 당도', '9.8~10.5 °Bx', '제주농업기술원, 토양피복재배 실천기술 교육 (2019)', '원문 확인'],
@@ -388,7 +388,7 @@
     },
     pepper: {
       name: '파프리카', fruit: 'pepper',
-      params: { baseBrix: 7, highBrix: 8, maxBrixRise: 0.8, yieldLinear: 0.036 },
+      params: { baseBrix: 7, highBrix: 8, maxBrixRise: 0.8, yieldLinear: 0.036, yieldQuad: 2.5 },
       note: '20% 정도 줄여도 수량이 거의 줄지 않는다는 연구가 있음. 당도 상승은 작게 잡음.',
       evidence: [
         ['일반 당도', '7 Brix로 둠', '-', '가정'],

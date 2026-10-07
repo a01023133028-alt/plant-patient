@@ -25,19 +25,21 @@ check('Brix 4.8~5.5', s100.brix >= 4.8 && s100.brix <= 5.5, 'Brix ' + f(s100.bri
 check('수량 97~100%', y100 >= 97 && y100 <= 100, f(y100, 1) + '%');
 check('평균 클릭 < 1회/시간', s100.meanClicks < 1, f(s100.meanClicks) + '회');
 
-// 2. 70% 고정
+// 2. 70% 고정 (Plants 2024 원문 기준으로 바꿈: 원문의 −12%는 물 47% 조건)
 var r70 = M.run(opt({ mode: 'fixed', ratio: 0.7 }));
 var s70 = r70.summary;
 console.log('2. 70% 고정, 30일, 보통');
-check('수량 −8~−16%', s70.yieldPct - 100 <= -8 && s70.yieldPct - 100 >= -16, f(s70.yieldPct - 100, 1) + '%');
-check('Brix +1.5 이상', s70.brixDelta >= 1.5, '+' + f(s70.brixDelta));
+check('수량 −3~−10% (물 47%의 −12%보다 작게)', s70.yieldPct - 100 <= -3 && s70.yieldPct - 100 >= -10, f(s70.yieldPct - 100, 1) + '%');
+check('Brix +0.4 이상', s70.brixDelta >= 0.4, '+' + f(s70.brixDelta));
 
-// 3. 50% 고정
+// 3. 물 47% 고정 = Plants 2024 방울토마토 2020 조건
+var r47 = M.run(opt({ mode: 'fixed', ratio: 0.47 }));
+var s47 = r47.summary;
 var r50 = M.run(opt({ mode: 'fixed', ratio: 0.5 }));
-var s50 = r50.summary;
-console.log('3. 50% 고정, 30일, 보통');
-check('수량 −20% 이하', s50.yieldPct - 100 <= -20, f(s50.yieldPct - 100, 1) + '%');
-check('70%보다 Brix 높음', s50.brix > s70.brix, f(s50.brix) + ' > ' + f(s70.brix));
+console.log('3. 물 47% 고정, 30일, 보통 (Plants 2024: 수량 −12%)');
+check('수량 −5~−15%', s47.yieldPct - 100 <= -5 && s47.yieldPct - 100 >= -15, f(s47.yieldPct - 100, 1) + '%');
+check('Brix +0.6~1.3 (+12~26%)', s47.brixDelta >= 0.6 && s47.brixDelta <= 1.3, '+' + f(s47.brixDelta));
+check('50%가 70%보다 Brix 높고 수량 낮음', r50.summary.brix > s70.brix && r50.summary.yieldPct < s70.yieldPct, f(r50.summary.brix) + ' > ' + f(s70.brix));
 
 // 4. 단수 7일
 var r0 = M.simulate({ mode: 'fixed', ratio: 0, days: 7, weather: 'normal', seed: 42 });
@@ -103,7 +105,7 @@ Object.keys(M.CROPS).forEach(function (k) {
     else console.log('  참고  ' + M.CROPS[k].name + ': ' + v.target.label + '  (모델 ' + f(v.value) + (v.ok ? ', 범위 안' : ', 범위 밖') + ')');
   });
 });
-['cherry', 'strawberry', 'melon', 'citrus', 'pepper', 'tomatoPaper'].forEach(function (k) {
+['cherry', 'strawberry', 'melon', 'citrus', 'pepper', 'tomatoDraft'].forEach(function (k) {
   var cv = M.brixCurve({ crop: k, days: 60, weather: 'normal', seed: 42 }, rs);
   var ok = cv.every(function (pt, i) { return i === 0 || pt.brix <= cv[i - 1].brix + 1e-9; });
   check(M.CROPS[k].name + ': 관수↓ → 당도↑ (단조)', ok);
