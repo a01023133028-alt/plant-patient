@@ -75,14 +75,33 @@ check('경보 당일 관수 100%', ad >= 0 && al.ratio[ad] === 1.0 && (ad === 0 
   ad >= 0 ? '전날 ' + Math.round(al.ratio[ad - 1] * 100) + '% → 당일 ' + Math.round(al.ratio[ad] * 100) + '%' : '');
 check('모든 경보일이 100%', al.alarm.every(function (x, i) { return !x || al.ratio[i] === 1.0; }));
 
+// 8. 관계 그래프: 관수를 줄일수록 당도가 오름 (단조 감소 관계)
+console.log('8. 관수 비율이 낮을수록 최종 당도가 높음 (40~110%)');
+var rs = []; for (var q = 40; q <= 110; q += 5) rs.push(q / 100);
+var cv = M.brixCurve({ days: 30, weather: 'normal', seed: 42 }, rs);
+var mono = cv.every(function (pt, i) { return i === 0 || pt.brix <= cv[i - 1].brix + 1e-9; });
+check('관수↓ → 당도↑', mono, '40%: ' + f(cv[0].brix) + ' / 70%: ' + f(cv[6].brix) + ' / 100%: ' + f(cv[12].brix));
+
+// 9. 비정상 계수 입력에도 계산이 깨지지 않음
+console.log('9. 비정상 계수 (0, 음수, 빈 값)에도 NaN 없음');
+var weird = { brixTau: 0, highBrix: 5, fatigueTau: 0, stressAccum: 3, clickMax: -10, brakeStep: 0, alarmLine: 0, sustainMinDays: 0, clickExp: 'abc', baseBrix: '' };
+var finiteAll = true;
+['full', 'fixed', 'brake'].forEach(function (m) {
+  var w = M.run({ mode: m, ratio: 0.5, days: 20, weather: 'heat', seed: '', params: weird });
+  ['ratio', 'clicks', 'ctrlClicks', 'S', 'brix', 'yieldRatio', 'water'].forEach(function (k) {
+    if (!w.res[k].every(isFinite)) finiteAll = false;
+  });
+  for (var k in w.summary) if (!isFinite(w.summary[k])) finiteAll = false;
+});
+check('모든 결과가 유한한 숫자', finiteAll);
+
 // 참고: 세 방식 비교
 ['normal', 'heat'].forEach(function (w) {
-  console.log('\n[참고] 세 방식 비교 (30일, ' + (w === 'heat' ? '폭염' : '보통') + ', 프리미엄 30%, 시드 42)');
-  M.compareAll({ days: 30, weather: w, premium: 0.3, seed: 42 }).forEach(function (g) {
+  console.log('\n[참고] 세 방식 비교 (30일, ' + (w === 'heat' ? '폭염' : '보통') + ', 시드 42)');
+  M.compareAll({ days: 30, weather: w, seed: 42 }).forEach(function (g) {
     var s = g.summary;
     console.log('  ' + g.name.padEnd(16) + ' Brix ' + f(s.brix) + ' (+' + f(s.brixDelta) + ')  수량 ' + f(s.yieldPct, 1) +
-      '%  소득 ' + Math.round(s.income) + '만 원 (' + (s.incomeDelta >= 0 ? '+' : '') + Math.round(s.incomeDelta) + ')  물 ' +
-      f(s.waterPct, 0) + '%  경보 ' + s.alarms + '회');
+      '%  물 ' + f(s.waterPct, 0) + '%  경보 ' + s.alarms + '회');
   });
 });
 

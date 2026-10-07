@@ -14,15 +14,15 @@
   body {
     background: var(--bg); color: var(--text);
     font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
-    font-size: 15px; line-height: 1.4;
+    font-size: 17px; line-height: 1.4;
     display: flex; flex-direction: column; min-height: 100vh;
   }
   button, input, select { font-family: inherit; }
 
   header { display: flex; align-items: baseline; gap: 20px; padding: 14px 24px 8px; }
-  header h1 { margin: 0; color: var(--ink); font-size: 28px; letter-spacing: -0.5px; }
-  header p { margin: 0; font-size: 17px; }
-  header .tag { margin-left: auto; font-size: 13px; color: var(--ink); background: #FFF3C9;
+  header h1 { margin: 0; color: var(--ink); font-size: 32px; letter-spacing: -0.5px; }
+  header p { margin: 0; font-size: 20px; color: var(--ink); }
+  header .tag { margin-left: auto; font-size: 15px; font-weight: bold; color: var(--ink); background: #FFF3C9;
     border: 1px solid #E5CF7C; border-radius: 6px; padding: 4px 10px; white-space: nowrap; }
 
   main { flex: 1; display: grid; grid-template-columns: 330px minmax(380px, 1fr) minmax(460px, 1.15fr);
@@ -33,70 +33,90 @@
   /* 왼쪽 조작 패널 */
   #controls { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
   fieldset { border: 0; margin: 0; padding: 0; }
-  legend, .lbl { font-weight: bold; color: var(--ink); font-size: 14px; margin-bottom: 4px; padding: 0; }
+  legend, .lbl { font-weight: bold; color: var(--ink); font-size: 17px; margin-bottom: 4px; padding: 0; }
   .radio { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
   .radio:hover { background: var(--soft); }
   .radio input { accent-color: var(--green); width: 17px; height: 17px; margin: 0; }
   .radio.on { background: #E3F0E8; border-color: #B9D8C5; }
-  .radio small { color: var(--gray); }
+  .radio small { color: #5F6B65; font-size: 14px; }
   .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .val { font-weight: bold; color: var(--green); font-variant-numeric: tabular-nums; }
   input[type=range] { width: 100%; accent-color: var(--green); margin: 4px 0 0; }
   input[type=range]:disabled { opacity: .35; }
   .dis { opacity: .5; }
-  .note { font-size: 12px; color: var(--gray); }
+  .note { font-size: 14px; color: #5F6B65; }
   .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-  .seg label { flex: 1; text-align: center; padding: 6px 0; cursor: pointer; font-size: 14px; }
-  .seg input { display: none; }
+  .seg label { flex: 1; text-align: center; padding: 7px 0; cursor: pointer; font-size: 17px; }
+  .seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .seg label:focus-within { outline: 3px solid var(--blue); outline-offset: -3px; }
   .seg label.on { background: var(--green); color: #fff; font-weight: bold; }
   .seg label.on.heat { background: var(--red); }
   .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .btn { border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 8px; padding: 8px 6px;
-    font-size: 14px; cursor: pointer; font-weight: bold; }
+  .btn { border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 8px; padding: 9px 6px;
+    font-size: 16px; cursor: pointer; font-weight: bold; }
   .btn:hover { background: var(--soft); }
   .btn.primary { background: var(--green); color: #fff; border-color: var(--green); }
   .btn.primary:hover { background: #125c3c; }
-  .toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: bold; color: var(--ink); font-size: 14px; }
+  .toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: bold; color: var(--ink); font-size: 17px; }
   .toggle input { width: 18px; height: 18px; accent-color: var(--green); margin: 0; }
 
   /* 가운데 온실 */
   #stage { display: flex; flex-direction: column; gap: 8px; }
   .stagehead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .badge { font-weight: bold; font-size: 17px; padding: 6px 14px; border-radius: 999px; color: #fff; white-space: nowrap; }
+  .badge { font-weight: bold; font-size: 20px; padding: 7px 16px; border-radius: 999px; color: #fff; white-space: nowrap; }
   .badge.normal { background: var(--green); }
   .badge.reduce { background: #4E8A5F; }
   .badge.hold { background: var(--blue); }
   .badge.alarm { background: var(--red); animation: blink 1s infinite; }
   @keyframes blink { 50% { opacity: .7; } }
-  .daybox { margin-left: auto; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
-  .daybox b { font-size: 22px; }
+  .explain { font-size: 20px; color: var(--ink); background: var(--soft); border-radius: 10px; padding: 8px 14px; min-height: 42px; }
+  .explain b { color: var(--ink); }
+  .readout small { font-size: 15px; color: var(--text); font-weight: normal; }
+  .wave { fill: none; stroke: var(--wc, #17704A); stroke-width: 3; transform-box: fill-box; transform-origin: center;
+    animation: wave var(--dur, 3s) linear infinite; }
+  #waves .w2 { animation-delay: calc(var(--dur, 3s) * -0.33); }
+  #waves .w3 { animation-delay: calc(var(--dur, 3s) * -0.66); }
+  @keyframes wave { from { transform: scale(.15); opacity: .95; } to { transform: scale(1); opacity: 0; } }
+  #house .rachis { stroke: #3E6B2C; stroke-width: 2.5; fill: none; }
+  #house .vein { stroke: #A8D884; stroke-width: .8; opacity: .55; fill: none; }
+  .fall { animation: fall 1s linear infinite; }
+  @keyframes fall { from { transform: translateY(0); opacity: 1; } to { transform: translateY(16px); opacity: 0; } }
+  #led { animation: blink 1.2s infinite; }
+  #vignette.alarmOn { animation: vig 1s infinite; }
+  @keyframes vig { 0%, 100% { opacity: .9; } 50% { opacity: .3; } }
+  @media (prefers-reduced-motion: reduce) { .wave, .fall, #led, #vignette.alarmOn, .badge.alarm { animation: none; } .wave { transform: scale(.7); opacity: .6; } }
+  .daybox { margin-left: auto; font-size: 18px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .daybox b { font-size: 28px; }
   #svgwrap { flex: 1; min-height: 0; display: flex; }
-  #house { width: 100%; height: 100%; }
+  #house { width: 100%; height: 100%; border-radius: 10px; overflow: hidden; }
   .readout { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .readout div { background: var(--soft); border-radius: 8px; padding: 6px 8px; text-align: center; }
-  .readout span { display: block; font-size: 12px; color: var(--gray); }
-  .readout b { font-size: 19px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .readout span { display: block; font-size: 15px; color: #5F6B65; }
+  .readout b { font-size: 28px; color: var(--ink); font-variant-numeric: tabular-nums; }
   .progress { height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden; }
   .progress i { display: block; height: 100%; background: var(--green); width: 0; }
 
   /* 오른쪽 그래프·결과 */
   #results { display: flex; flex-direction: column; gap: 8px; }
-  .chart { flex: 1; min-height: 110px; display: flex; flex-direction: column; }
-  .chart .ct { font-size: 14px; font-weight: bold; color: var(--ink); display: flex; gap: 12px; align-items: baseline; }
-  .chart .ct small { font-weight: normal; color: var(--gray); font-size: 12px; }
+  .chart { flex: 1; min-height: 100px; display: flex; flex-direction: column; }
+  .chart .ct { font-size: 17px; font-weight: bold; color: var(--ink); display: flex; gap: 12px; align-items: baseline; }
+  .chart .ct small { font-weight: normal; color: #5F6B65; font-size: 14px; }
+  .chart.big { flex: 1.6; }
+  .chart.small { flex: .7; }
   .chart canvas { flex: 1; width: 100%; min-height: 0; }
-  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .cardnote { font-size: 15px; color: var(--text); }
   .card { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; background: #FBFCF9; }
-  .card .k { font-size: 13px; color: var(--text); }
-  .card .v { font-size: 26px; font-weight: bold; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.2; }
-  .card .v small { font-size: 14px; font-weight: normal; }
-  .card .d { font-size: 13px; font-weight: bold; }
+  .card .k { font-size: 16px; font-weight: bold; color: var(--text); }
+  .card .v { font-size: 36px; font-weight: bold; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .card .v small { font-size: 17px; font-weight: normal; }
+  .card .d { font-size: 15px; font-weight: bold; }
   .up { color: var(--green); } .down { color: var(--red); } .flat { color: var(--gray); }
 
   footer { display: flex; align-items: center; gap: 12px; padding: 8px 24px 12px; flex-wrap: wrap; }
-  footer .btn { padding: 10px 18px; font-size: 15px; }
+  footer .btn { padding: 10px 18px; font-size: 17px; }
   .disclaimer { flex: 1; min-width: 300px; background: #FFF8E1; border: 1px solid #E5CF7C; color: var(--ink);
-    border-radius: 8px; padding: 8px 14px; font-size: 14px; }
+    border-radius: 8px; padding: 8px 14px; font-size: 17px; font-weight: bold; }
 
   /* 모달 */
   .modal { position: fixed; inset: 0; background: rgba(22, 48, 43, .45); display: none; align-items: center; justify-content: center; z-index: 10; padding: 20px; }
@@ -107,36 +127,43 @@
   .sheethead .btn { padding: 7px 12px; }
   .sheethead .close { margin-left: auto; }
   #cmpCanvas { width: 100%; height: auto; background: #fff; border: 1px solid var(--line); border-radius: 10px; display: block; }
-  table { border-collapse: collapse; width: 100%; background: #fff; font-size: 14px; }
+  table { border-collapse: collapse; width: 100%; background: #fff; font-size: 17px; }
   th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
   th { background: var(--soft); color: var(--ink); }
   td.n { text-align: right; font-variant-numeric: tabular-nums; }
   .warn { color: var(--red); font-weight: bold; margin: 10px 0; }
   .params { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 6px 14px; margin-top: 8px; }
-  .params label { display: grid; grid-template-columns: 1fr 86px; gap: 6px; align-items: center; font-size: 13px; background: #fff;
+  .params label { display: grid; grid-template-columns: 1fr 86px; gap: 6px; align-items: center; font-size: 15px; background: #fff;
     border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
-  .params label small { display: block; color: var(--gray); font-size: 11px; }
+  .params label small { display: block; color: #5F6B65; font-size: 13px; }
   .params label.assumed small { color: #9A6B00; }
   .params input { width: 86px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; text-align: right; }
   .params input.changed { background: #FFF3C9; border-color: #E5CF7C; }
 
   /* 노트북 화면 */
   @media (max-width: 1500px), (max-height: 900px) {
-    body { font-size: 14px; }
+    body { font-size: 15px; }
+    legend, .lbl { font-size: 15px; } .seg label, .toggle { font-size: 15px; } .btn { font-size: 14px; padding: 7px 4px; }
+    .chart .ct { font-size: 15px; } .chart .ct small { font-size: 12px; }
+    .card .k { font-size: 14px; } .card .d { font-size: 13px; } .card .v small { font-size: 14px; }
+    .readout span { font-size: 13px; } .readout small { font-size: 12px; }
+    .daybox b { font-size: 22px; } footer .btn { font-size: 15px; } .disclaimer { font-size: 14px; }
     header { padding: 10px 16px 4px; }
-    header h1 { font-size: 23px; } header p { font-size: 15px; }
+    header h1 { font-size: 25px; } header p { font-size: 16px; }
     main { grid-template-columns: 290px minmax(320px, 1fr) minmax(400px, 1.1fr); padding: 4px 16px 8px; gap: 10px; }
     .panel { padding: 10px 12px; }
     #controls { gap: 7px; }
     .radio { padding: 4px 6px; }
-    .card .v { font-size: 21px; }
-    .readout b { font-size: 16px; }
+    .card .v { font-size: 26px; }
+    .readout b { font-size: 20px; }
+    .explain { font-size: 15px; padding: 5px 10px; min-height: 0; }
+    .badge { font-size: 16px; padding: 5px 12px; }
     footer { padding: 6px 16px 10px; }
     footer .btn { padding: 8px 14px; }
   }
   @media (max-height: 900px) {
     .compact-hide { display: none; }
-    .note { font-size: 11px; }
+    .note { font-size: 12px; }
     input[type=range] { margin-top: 2px; }
   }
   @media (max-width: 1100px) {
@@ -184,11 +211,6 @@
       <input type="range" id="days" min="7" max="60" step="1" value="30">
     </div>
 
-    <div>
-      <div class="row"><span class="lbl">고당도 단가 프리미엄 가정</span><span class="val" id="premVal">30%</span></div>
-      <input type="range" id="premium" min="0" max="70" step="5" value="30">
-      <div class="note">참고: 농진청 2002년 고당도 사례 +67%</div>
-    </div>
 
     <div>
       <div class="lbl">재생</div>
@@ -215,31 +237,78 @@
       <span class="daybox"><b id="dayNow">1</b> / <span id="dayTotal">30</span>일째</span>
     </div>
     <div class="progress"><i id="prog"></i></div>
+    <div class="explain" id="explain"></div>
     <div id="svgwrap">
-      <svg id="house" viewBox="0 0 600 470" preserveAspectRatio="xMidYMid meet" role="img" aria-label="온실 속 시설 과채 3그루">
+      <svg id="house" viewBox="0 -130 800 720" preserveAspectRatio="xMidYMid meet" overflow="hidden" role="img" aria-label="온실 속 시설 과채 3그루와 소리 센서">
         <defs>
-          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#EAF4EE"/><stop offset="1" stop-color="#F7FAF5"/>
-          </linearGradient>
+          <linearGradient id="skyN" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FCBEA"/><stop offset=".65" stop-color="#DCEFF7"/><stop offset="1" stop-color="#EEF5EA"/></linearGradient>
+          <linearGradient id="skyH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F4A259"/><stop offset=".6" stop-color="#FBD7A2"/><stop offset="1" stop-color="#FCEBD2"/></linearGradient>
+          <radialGradient id="sunG"><stop offset="0" stop-color="#FFFBE6"/><stop offset=".35" stop-color="#FFE38A"/><stop offset="1" stop-color="#FFE38A" stop-opacity="0"/></radialGradient>
+          <radialGradient id="sunHG"><stop offset="0" stop-color="#FFF4D6"/><stop offset=".3" stop-color="#FF9F43"/><stop offset="1" stop-color="#FF7A1A" stop-opacity="0"/></radialGradient>
+          <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity=".35"/></linearGradient>
+          <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#C9D1D3"/><stop offset=".5" stop-color="#F4F7F7"/><stop offset="1" stop-color="#A9B4B7"/></linearGradient>
+          <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9ECEA"/><stop offset="1" stop-color="#C4CBC7"/></linearGradient>
+          <linearGradient id="slab" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".7" stop-color="#E7EAE6"/><stop offset="1" stop-color="#C9CFCA"/></linearGradient>
+          <linearGradient id="stemG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3E6B2C"/><stop offset=".45" stop-color="#7FAE55"/><stop offset="1" stop-color="#365E26"/></linearGradient>
+          <linearGradient id="leafG" x1="0" y1="0" x2="1" y2="1"><stop id="lg0" offset="0" stop-color="#5DAA4A"/><stop id="lg1" offset="1" stop-color="#2D6E2A"/></linearGradient>
+          <linearGradient id="leafOld" x1="0" y1="0" x2="1" y2="1"><stop id="lo0" offset="0" stop-color="#7BAA45"/><stop id="lo1" offset="1" stop-color="#466F28"/></linearGradient>
+          <radialGradient id="fr0" cx=".38" cy=".32" r=".75"><stop offset="0"/><stop offset=".45"/><stop offset="1"/></radialGradient>
+          <radialGradient id="fr1" cx=".38" cy=".32" r=".75"><stop offset="0"/><stop offset=".45"/><stop offset="1"/></radialGradient>
+          <radialGradient id="fr2" cx=".38" cy=".32" r=".75"><stop offset="0"/><stop offset=".45"/><stop offset="1"/></radialGradient>
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#16302B" flood-opacity=".25"/></filter>
+          <filter id="soft"><feGaussianBlur stdDeviation="6"/></filter>
         </defs>
-        <!-- 온실 틀 -->
-        <path d="M30 400 L30 150 Q300 20 570 150 L570 400 Z" fill="url(#sky)" stroke="#B8C6BC" stroke-width="3"/>
-        <path d="M165 400 L165 88 M300 400 L300 62 M435 400 L435 88" stroke="#D3DED6" stroke-width="2"/>
-        <path d="M30 150 Q300 20 570 150" fill="none" stroke="#9FB2A5" stroke-width="4"/>
-        <!-- 바닥 -->
-        <rect x="20" y="400" width="560" height="62" rx="6" fill="#8B6B4A"/>
-        <rect x="20" y="400" width="560" height="10" fill="#6E5338"/>
-        <g id="plants"></g>
-        <g id="drops"></g>
-        <!-- 센서 -->
-        <g id="sensor" transform="translate(372 372)">
-          <g id="rings"></g>
-          <rect x="-13" y="-10" width="26" height="20" rx="4" fill="#16302B"/>
-          <circle cx="0" cy="0" r="5" fill="#9FE3BF"/>
-          <text x="-20" y="5" text-anchor="end" font-size="13" fill="#16302B" font-weight="bold" stroke="#F7FAF5" stroke-width="4" paint-order="stroke">소리 센서</text>
+
+        <!-- 하늘·해 -->
+        <rect id="sky" x="0" y="-130" width="800" height="720" fill="url(#skyN)"/>
+        <g id="sun"><circle id="sunCore" cx="680" cy="-40" r="90" fill="url(#sunG)"/></g>
+        <path d="M0 330 Q120 270 250 310 T520 300 T800 290 L800 400 L0 400 Z" fill="#9CC48A" opacity=".55"/>
+        <path d="M0 360 Q160 320 330 350 T800 335 L800 420 L0 420 Z" fill="#7FB070" opacity=".5"/>
+
+        <!-- 온실 -->
+        <path d="M40 470 L40 150 Q400 -10 760 150 L760 470 Z" fill="#F2F8F3" opacity=".55"/>
+        <path d="M40 470 L40 150 Q400 -10 760 150 L760 470 Z" fill="url(#glass)"/>
+        <g stroke="url(#metal)" stroke-width="5" fill="none">
+          <path d="M40 470 L40 150 Q400 -10 760 150 L760 470"/>
+          <path d="M160 470 L160 95 M280 470 L280 62 M400 470 L400 52 M520 470 L520 62 M640 470 L640 95"/>
+          <path d="M40 250 L760 250" stroke-width="3" opacity=".7"/>
         </g>
-        <text x="300" y="455" text-anchor="middle" font-size="13" fill="#F3E9DC">시설 과채 (특정 작물 아님)</text>
-        <text id="dropLabel" x="40" y="392" font-size="13" fill="#2F6DB5" font-weight="bold"></text>
+        <g fill="#fff" opacity=".28">
+          <path d="M60 170 L120 130 L135 140 L75 185 Z"/><path d="M300 90 L380 70 L384 80 L306 102 Z"/><path d="M560 85 L640 110 L634 120 L556 96 Z"/>
+          <path d="M700 300 L740 270 L745 280 L705 312 Z"/>
+        </g>
+        <path d="M40 100 L760 100" stroke="#8B9A93" stroke-width="2" opacity=".8"/>
+
+        <!-- 바닥과 재배 배드 -->
+        <rect x="0" y="466" width="800" height="124" fill="url(#floor)"/>
+        <path d="M40 466 L760 466" stroke="#AEB6B1" stroke-width="2"/>
+        <g id="slabs"></g>
+        <g id="plants" filter="url(#shadow)"></g>
+        <g id="drip"></g>
+
+        <!-- 소리 센서 (가운데 줄기에 부착) -->
+        <g id="sensor" transform="translate(400 330)">
+          <g id="waves">
+            <circle class="wave" r="60"/><circle class="wave w2" r="60"/><circle class="wave w3" r="60"/>
+          </g>
+          <path id="cable" d="M8 16 C 40 60, 10 100, 40 136" stroke="#222" stroke-width="2.5" fill="none"/>
+          <rect x="-16" y="-14" width="32" height="30" rx="6" fill="#20302C" stroke="#0E1A17" stroke-width="1.5"/>
+          <path d="M-9 -6 H9 M-9 -1 H9 M-9 4 H9" stroke="#56706A" stroke-width="1.6"/>
+          <circle id="led" cx="10" cy="10" r="3" fill="#47E58F"/>
+          <text x="-24" y="-2" text-anchor="end" font-size="16" font-weight="bold" fill="#16302B" stroke="#fff" stroke-width="5" paint-order="stroke">소리 센서</text>
+        </g>
+
+        <!-- 물방울 아이콘 줄 -->
+        <g id="dropIcons"></g>
+        <text id="dropLabel" x="40" y="570" font-size="19" fill="#1E4F8A" font-weight="bold"></text>
+        <text x="770" y="570" text-anchor="end" font-size="14" fill="#56625C">시설 과채 (특정 작물 아님)</text>
+
+        <!-- 날씨 표시 -->
+        <g id="thermo" transform="translate(24 -110)">
+          <rect x="0" y="0" width="150" height="40" rx="20" fill="#fff" opacity=".9"/>
+          <text id="thermoText" x="75" y="27" text-anchor="middle" font-size="18" font-weight="bold" fill="#16302B"></text>
+        </g>
+        <rect id="vignette" x="4" y="-126" width="792" height="712" rx="14" fill="none" stroke="#B23A26" stroke-width="8" opacity="0"/>
       </svg>
     </div>
     <div class="readout">
@@ -252,14 +321,15 @@
 
   <!-- 3. 그래프와 결과 -->
   <section class="panel" id="results">
-    <div class="chart"><div class="ct">관수 비율 (%) <small id="ratioLegend"></small></div><canvas id="cRatio"></canvas></div>
-    <div class="chart"><div class="ct">시간당 클릭 수 (회/시간) <small>점선: 브레이크 기준 5 · 경보 기준 15</small></div><canvas id="cClick"></canvas></div>
-    <div class="chart"><div class="ct">누적 당도 (Brix) <small>점선: 고당도 기준 8</small></div><canvas id="cBrix"></canvas></div>
+    <div class="chart big"><div class="ct">관수량과 당도의 관계 <small>재배 기간이 끝났을 때의 당도 · 점 = 지금 설정</small></div><canvas id="cRel"></canvas></div>
+    <div class="chart small"><div class="ct">날짜별 관수 비율 (%) <small id="ratioLegend"></small></div><canvas id="cRatio"></canvas></div>
+    <div class="chart"><div class="ct">시간당 클릭 수 (회/시간) <small>점선: 브레이크 5 · 경보 15</small></div><canvas id="cClick"></canvas></div>
+    <div class="chart"><div class="ct">날짜별 당도 (Brix) <small>점선: 고당도 기준 8</small></div><canvas id="cBrix"></canvas></div>
+    <div class="cardnote">아래 변화는 모두 <b>① 충분히 관수(100%)</b>와 비교한 값이에요.</div>
     <div class="cards">
       <div class="card"><div class="k">당도</div><div class="v" id="kBrix">-</div><div class="d" id="dBrix"></div></div>
-      <div class="card"><div class="k">수량 (일반 대비)</div><div class="v" id="kYield">-</div><div class="d" id="dYield"></div></div>
-      <div class="card"><div class="k">10a당 연 소득</div><div class="v" id="kIncome">-</div><div class="d" id="dIncome"></div></div>
-      <div class="card"><div class="k">물 사용량 (일반 대비)</div><div class="v" id="kWater">-</div><div class="d" id="dWater"></div></div>
+      <div class="card"><div class="k">수량</div><div class="v" id="kYield">-</div><div class="d" id="dYield"></div></div>
+      <div class="card"><div class="k">물 사용량</div><div class="v" id="kWater">-</div><div class="d" id="dWater"></div></div>
     </div>
   </section>
 </main>
@@ -303,7 +373,6 @@
       <li>당도 = 기준 + 최대상승폭 × (1 − e<sup>−x/τ</sup>). x는 S가 하한 이상으로 연속 며칠 이상 "지속"된 날의 (S − 하한) 합. 짧은 스트레스는 당도를 못 올림.</li>
       <li>수량: 매일 1 − a·S − b·max(0, S − 임계)², 기간 평균.</li>
       <li>클릭 = 정상 + 최대 × S<sup>지수</sup> × 피로(심한 건조가 오래가면 감소) × (1 + 노이즈). 시드 고정.</li>
-      <li>소득 = 2,437만 + (총수입 − 4,202만). 총수입 = 4,202만 × 수량비율 × (1 + 프리미엄 × h(Brix)), h는 5 Brix 이하 0 → 8 이상 1. 경영비는 같다고 가정. 재배 기간 결과가 한 해를 대표한다고 가정.</li>
       <li>소리 브레이크: 100%에서 하루 10%p씩 감량. 같은 날씨의 대조 구역(100%)보다 클릭이 기준 이상 늘면 한 계단 복귀 후 유지. 클릭이 경보 기준을 넘으면 그날 바로 100%, 며칠 유지 후 다시 감량.</li>
     </ol>
     <h3 style="margin:14px 0 4px;color:var(--ink)">계수 (수정하면 바로 다시 계산) <small class="note">노란 글씨 = 가정</small></h3>
@@ -330,7 +399,6 @@
       ratio: +$('ratio').value / 100,
       weather: radioVal('weather'),
       days: +$('days').value,
-      premium: +$('premium').value / 100,
       seed: +$('seed').value || 0,
       params: state.params
     };
@@ -350,7 +418,6 @@
     $('ratioBox').classList.toggle('dis', mode !== 'fixed');
     $('ratioVal').textContent = mode === 'full' ? '100%' : mode === 'brake' ? '자동' : $('ratio').value + '%';
     $('daysVal').textContent = $('days').value + '일';
-    $('premVal').textContent = $('premium').value + '%';
     $('speedVal').textContent = '하루 ' + (2 / +$('speed').value).toFixed(1) + '초';
     document.querySelectorAll('#modeSet .radio').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); });
     document.querySelectorAll('#weatherSeg label').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); });
@@ -370,13 +437,16 @@
   function lineChart(cv, cfg) {
     var s = setupCanvas(cv), g = s.g, W = s.w, H = s.h;
     if (W < 10 || H < 10) return;
-    var L = 40, R = 12, T = 8, B = 20, pw = W - L - R, ph = H - T - B;
+    var L = 44, R = 12, T = 8, B = 22, pw = W - L - R, ph = H - T - B;
     var n = cfg.days, ymin = cfg.ymin, ymax = cfg.ymax;
     var X = function (i) { return L + (n <= 1 ? 0 : i / (n - 1)) * pw; };
     var Y = function (v) { return T + ph - (v - ymin) / (ymax - ymin) * ph; };
-    g.font = '11px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+    g.font = '13px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
     g.fillStyle = C.gray; g.strokeStyle = '#ECEFE8'; g.lineWidth = 1;
-    cfg.yticks.forEach(function (v) {
+    var lastY = -1e9;
+    cfg.yticks.slice().sort(function (a, b) { return a - b; }).filter(function (v) {
+      var y = Y(v); if (Math.abs(y - lastY) < 15) return false; lastY = y; return true;
+    }).forEach(function (v) {
       g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(W - R, Y(v)); g.stroke();
       g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillText(v, L - 5, Y(v));
     });
@@ -387,9 +457,9 @@
     (cfg.refs || []).forEach(function (r) {
       g.save(); g.setLineDash([5, 4]); g.strokeStyle = r.color; g.lineWidth = 1.5;
       g.beginPath(); g.moveTo(L, Y(r.v)); g.lineTo(W - R, Y(r.v)); g.stroke(); g.restore();
-      g.fillStyle = r.color; g.textAlign = 'right'; g.textBaseline = 'bottom'; g.font = 'bold 11px "Malgun Gothic", sans-serif';
+      g.fillStyle = r.color; g.textAlign = 'right'; g.textBaseline = 'bottom'; g.font = 'bold 13px "Malgun Gothic", sans-serif';
       g.fillText(r.label, W - R - 2, Y(r.v) - 1);
-      g.font = '11px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+      g.font = '13px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
     });
     var upto = cfg.upto;
     cfg.series.forEach(function (sr) {
@@ -413,11 +483,73 @@
   function niceMax(v, min) { var m = Math.max(min, v * 1.15); var st = m > 40 ? 10 : 5; return Math.ceil(m / st) * st; }
   function ticks(max, n) { var st = max / n, a = []; for (var i = 0; i <= n; i++) a.push(Math.round(i * st * 10) / 10); return a; }
 
+  // 관수량-당도 관계 곡선 (보통·폭염), 같은 조건이면 다시 계산하지 않음
+  var REL_RATIOS = []; for (var rr = 40; rr <= 110; rr += 5) REL_RATIOS.push(rr / 100);
+  var relCache = { key: '', curves: null };
+  function relCurves() {
+    var o = opts(), key = JSON.stringify([o.days, o.seed, o.params]);
+    if (relCache.key !== key) {
+      relCache.key = key;
+      relCache.curves = {
+        normal: M.brixCurve({ days: o.days, weather: 'normal', seed: o.seed, params: o.params }, REL_RATIOS),
+        heat: M.brixCurve({ days: o.days, weather: 'heat', seed: o.seed, params: o.params }, REL_RATIOS)
+      };
+    }
+    return relCache.curves;
+  }
+  function drawRelation() {
+    var cv = $('cRel'), s = setupCanvas(cv), g = s.g, W = s.w, H = s.h;
+    if (W < 10 || H < 10) return;
+    var res = state.sim.res, P = res.params, last = res.days - 1, cur = res.weather;
+    var curves = relCurves();
+    var L = 48, Rm = 16, T = 12, B = 44, pw = W - L - Rm, ph = H - T - B;
+    var ymin = 4, ymax = Math.max(10, Math.ceil(P.baseBrix + P.maxBrixRise + 0.5));
+    var X = function (r) { return L + (r - 0.4) / 0.7 * pw; };
+    var Y = function (v) { return T + ph - (v - ymin) / (ymax - ymin) * ph; };
+    var F = '"Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+    g.font = '13px ' + F; g.lineWidth = 1;
+    [4, 5, 6, 7, 8, 9, 10].filter(function (v) { return v <= ymax; }).forEach(function (v) {
+      g.strokeStyle = '#ECEFE8'; g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(W - Rm, Y(v)); g.stroke();
+      g.fillStyle = C.gray; g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillText(v, L - 6, Y(v));
+    });
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    [40, 50, 60, 70, 80, 90, 100, 110].forEach(function (v) { g.fillStyle = C.gray; g.fillText(v + '%', X(v / 100), T + ph + 5); });
+    g.fillStyle = C.ink; g.font = 'bold 13px ' + F;
+    g.textAlign = 'left'; g.fillText('← 물을 적게', L, T + ph + 24);
+    g.textAlign = 'right'; g.fillText('물을 많이 →', W - Rm, T + ph + 24);
+    g.textAlign = 'center'; g.font = '13px ' + F; g.fillStyle = C.text; g.fillText('관수 비율', L + pw / 2, T + ph + 24);
+    // 고당도 기준선
+    g.save(); g.setLineDash([6, 5]); g.strokeStyle = C.green; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(L, Y(P.highBrix)); g.lineTo(W - Rm, Y(P.highBrix)); g.stroke(); g.restore();
+    g.fillStyle = C.green; g.font = 'bold 13px ' + F; g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.fillText('고당도 기준 ' + P.highBrix, W - Rm - 4, Y(P.highBrix) - 2);
+    // 곡선: 지금 날씨는 굵게, 다른 날씨는 점선
+    ['normal', 'heat'].forEach(function (w) {
+      var pts = curves[w], on = w === cur, col = w === 'heat' ? '#D9682B' : C.green;
+      g.save(); g.strokeStyle = col; g.lineWidth = on ? 4 : 2; g.globalAlpha = on ? 1 : 0.55; if (!on) g.setLineDash([6, 5]);
+      g.beginPath(); pts.forEach(function (pt, i) { var x = X(pt.ratio), y = Y(pt.brix); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); g.restore();
+      var lab = pts[9]; // 85% 지점 (두 곡선이 가장 벌어지는 곳)
+      g.fillStyle = col; g.globalAlpha = on ? 1 : 0.75; g.font = 'bold 15px ' + F;
+      g.textAlign = 'left'; g.textBaseline = w === 'heat' ? 'bottom' : 'top';
+      g.fillText(w === 'heat' ? '폭염' : '보통', X(lab.ratio) + 4, Y(lab.brix) + (w === 'heat' ? -6 : 6)); g.globalAlpha = 1;
+    });
+    // 지금 설정 점
+    var wx = Math.max(0.4, Math.min(1.1, res.water[last])), by = res.brix[last];
+    g.fillStyle = C.ink; g.strokeStyle = '#fff'; g.lineWidth = 3;
+    g.beginPath(); g.arc(X(wx), Y(by), 8, 0, 7); g.fill(); g.stroke();
+    var txt = '지금: 물 ' + Math.round(res.water[last] * 100) + '% → ' + by.toFixed(1) + ' Brix';
+    g.font = 'bold 15px ' + F; var tw = g.measureText(txt).width + 16;
+    var tx = Math.min(W - Rm - tw, Math.max(L, X(wx) - tw / 2)), ty = Y(by) - 40 < T ? Y(by) + 14 : Y(by) - 40;
+    g.fillStyle = 'rgba(22,48,43,.9)'; g.fillRect(tx, ty, tw, 26);
+    g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(txt, tx + 8, ty + 13);
+  }
+
   function drawCharts() {
     var res = state.sim.res, t = state.t, n = res.days, P = res.params;
+    drawRelation();
     var pct = res.ratio.map(function (r) { return r * 100; });
     var marks = []; res.alarm.forEach(function (a, i) { if (a) marks.push({ i: i }); });
-    lineChart($('cRatio'), { days: n, upto: t, ymin: 0, ymax: 120, yticks: [0, 40, 70, 100, 120],
+    lineChart($('cRatio'), { days: n, upto: t, ymin: 0, ymax: 120, yticks: [0, 50, 100],
       refs: [{ v: 100, label: '100%', color: C.gray }],
       series: [{ data: pct, color: C.blue, step: true }] });
     var cmax = niceMax(Math.max.apply(null, res.clicks.concat(res.ctrlClicks)), P.alarmLine + 5);
@@ -428,67 +560,200 @@
       refs: [{ v: P.brakeLine, label: '브레이크 ' + P.brakeLine, color: C.blue }, { v: P.alarmLine, label: '경보 ' + P.alarmLine, color: C.red }],
       series: ser, marks: marks });
     var bmax = Math.max(10, Math.ceil(P.baseBrix + P.maxBrixRise + 0.5));
-    lineChart($('cBrix'), { days: n, upto: t, ymin: 3, ymax: bmax, yticks: [3, 5, 8, bmax],
+    lineChart($('cBrix'), { days: n, upto: t, ymin: 3, ymax: bmax, yticks: [5, 8, bmax],
       refs: [{ v: P.highBrix, label: '고당도 ' + P.highBrix, color: C.green }, { v: P.baseBrix, label: '일반 ' + P.baseBrix, color: C.gray }],
       series: [{ data: res.brix, color: C.green }] });
     $('ratioLegend').textContent = res.mode === 'brake' ? '클릭 그래프 회색 점선: 대조 구역(100%)' : '';
   }
 
-  // ── 온실 그림 ──
-  var SVGNS = 'http://www.w3.org/2000/svg';
-  function el(name, attrs, parent) {
-    var e = document.createElementNS(SVGNS, name);
-    for (var k in attrs) e.setAttribute(k, attrs[k]);
-    if (parent) parent.appendChild(e);
-    return e;
+  // ── 온실 그림 (실사풍 SVG) ──
+  var PLANT_X = [190, 400, 610], PLANT_DIR = [-1, 1, 1], PLANT_SWAY = [-6, 4, -3];
+  var FRUIT_HUE = [4, 24, 46]; // 빨강·주황·노랑
+  function n1(v) { return Math.round(v * 10) / 10; }
+  function hsl(h, s, l) { return 'hsl(' + n1(h) + ',' + n1(s) + '%,' + n1(Math.max(0, Math.min(100, l))) + '%)'; }
+
+  // 줄기 곡선(3차 베지어) 위의 점
+  function stemPts(p, S) {
+    var x0 = PLANT_X[p], d = PLANT_DIR[p];
+    return [[x0, 440], [x0 + PLANT_SWAY[p], 330], [x0 + d * S * 20, 205], [x0 + d * S * 58, 112 + S * 48]];
   }
-  var FRUIT_HUE = [6, 24, 44]; // 빨강·주황·노랑
-  function drawHouse(S, ratio, clicks, brix, alarm) {
-    var g = $('plants'); g.innerHTML = '';
-    var droop = S * 55;
-    [150, 300, 450].forEach(function (x0, p) {
-      var top = 140 + S * 30 + p * 6;
-      var bend = S * 22 * (p % 2 ? -1 : 1);
-      var stem = 'M' + x0 + ' 400 Q' + (x0 + bend) + ' ' + ((400 + top) / 2) + ' ' + (x0 + bend * 0.6) + ' ' + top;
-      el('path', { d: stem, stroke: '#3C6E3A', 'stroke-width': 7, fill: 'none', 'stroke-linecap': 'round' }, g);
-      for (var j = 0; j < 5; j++) {
-        var yy = 380 - j * ((400 - top) / 5.2), side = j % 2 ? 1 : -1;
-        var xx = x0 + bend * (1 - (yy - top) / (400 - top)) * 0.9;
-        var lf = el('g', { transform: 'translate(' + xx + ' ' + yy + ') rotate(' + (side > 0 ? -35 + droop : 215 - droop) + ')' }, g);
-        var green = 'hsl(' + (118 - S * 50) + ',' + (45 - S * 15) + '%,' + (36 + S * 8) + '%)';
-        el('path', { d: 'M0 0 Q22 -14 48 0 Q22 12 0 0 Z', fill: green, stroke: '#2E5A2C', 'stroke-width': 1 }, lf);
-        el('path', { d: 'M2 0 L44 0', stroke: '#2E5A2C', 'stroke-width': 1, opacity: .5 }, lf);
-      }
-      var fr = 15 * (1 - 0.35 * S);
-      var light = Math.max(30, 58 - (brix - 5) * 6);
-      for (var k = 0; k < 3; k++) {
-        var fy = 330 - k * 62, fx = x0 + (k % 2 ? 26 : -26) + bend * 0.4;
-        el('path', { d: 'M' + (x0 + bend * 0.35) + ' ' + (fy - 22) + ' L' + fx + ' ' + (fy - fr + 1), stroke: '#3C6E3A', 'stroke-width': 2 }, g);
-        var hue = FRUIT_HUE[(p + k) % 3];
-        el('circle', { cx: fx, cy: fy, r: fr, fill: 'hsl(' + hue + ',78%,' + light + '%)', stroke: 'hsl(' + hue + ',70%,' + (light - 14) + '%)', 'stroke-width': 1.5 }, g);
-        el('circle', { cx: fx - fr * 0.35, cy: fy - fr * 0.35, r: fr * 0.25, fill: '#fff', opacity: .45 }, g);
-        el('path', { d: 'M' + (fx - 5) + ' ' + (fy - fr) + ' L' + fx + ' ' + (fy - fr - 5) + ' L' + (fx + 5) + ' ' + (fy - fr) + ' Z', fill: '#3C6E3A' }, g);
+  function bez(P, u) {
+    var a = 1 - u, b0 = a * a * a, b1 = 3 * a * a * u, b2 = 3 * a * u * u, b3 = u * u * u;
+    return [b0 * P[0][0] + b1 * P[1][0] + b2 * P[2][0] + b3 * P[3][0], b0 * P[0][1] + b1 * P[1][1] + b2 * P[2][1] + b3 * P[3][1]];
+  }
+
+  // 톱니 가장자리 작은잎 (x축 방향, 길이 len, 폭 wid)
+  function leaflet(len, wid) {
+    var up = [], dn = [], N = 12;
+    for (var i = 0; i <= N; i++) {
+      var t = i / N, w = wid * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.08)), 0.75) * (i % 2 ? 1.12 : 0.92);
+      up.push(n1(len * t) + ' ' + n1(-w)); dn.unshift(n1(len * t) + ' ' + n1(w * 0.95));
+    }
+    return '<path d="M0 0 L' + up.join(' L') + ' L' + dn.join(' L') + ' Z"/>' +
+      '<path d="M1 0 L' + n1(len * 0.95) + ' 0" class="vein"/>';
+  }
+
+  // 겹잎 하나 (잎자루 + 작은잎 3쌍 + 끝잎)
+  function compoundLeaf(L, S, old) {
+    var curl = 1 - 0.45 * S, bendY = n1(L * (0.12 * S - 0.06));
+    var s = '<path d="M0 0 Q' + n1(L * 0.5) + ' ' + bendY + ' ' + n1(L) + ' ' + n1(bendY * 1.6) + '" class="rachis"/>';
+    var fill = old ? 'url(#leafOld)' : 'url(#leafG)';
+    s += '<g fill="' + fill + '" stroke="#24521F" stroke-width=".8">';
+    [0.3, 0.56, 0.8].forEach(function (f, i) {
+      var len = L * (0.36 - i * 0.04), wid = len * 0.32 * curl, x = n1(L * f), y = n1(bendY * f * f * 1.6);
+      var a = 52 + S * 20;
+      s += '<g transform="translate(' + x + ' ' + y + ') rotate(' + n1(-a) + ')">' + leaflet(len, wid) + '</g>';
+      s += '<g transform="translate(' + x + ' ' + y + ') rotate(' + n1(a) + ')">' + leaflet(len * 0.92, wid) + '</g>';
+    });
+    s += '<g transform="translate(' + n1(L) + ' ' + n1(bendY * 1.6) + ') rotate(' + n1(S * 25) + ')">' + leaflet(L * 0.38, L * 0.13 * curl) + '</g>';
+    return s + '</g>';
+  }
+
+  function fruit(cx, cy, r, hue) {
+    var s = '<circle cx="' + n1(cx) + '" cy="' + n1(cy) + '" r="' + n1(r) + '" fill="url(#fr' + hue + ')" stroke="rgba(60,20,10,.25)" stroke-width=".8"/>';
+    s += '<ellipse cx="' + n1(cx - r * 0.35) + '" cy="' + n1(cy - r * 0.4) + '" rx="' + n1(r * 0.28) + '" ry="' + n1(r * 0.16) + '" fill="#fff" opacity=".55" transform="rotate(-30 ' + n1(cx - r * 0.35) + ' ' + n1(cy - r * 0.4) + ')"/>';
+    var sep = '';
+    for (var k = 0; k < 5; k++) {
+      var a = (k * 72 - 90) * Math.PI / 180, ex = cx + Math.cos(a) * r * 0.45, ey = cy - r * 0.9 + Math.sin(a) * r * 0.28;
+      sep += 'M' + n1(cx) + ' ' + n1(cy - r * 0.92) + ' L' + n1(ex) + ' ' + n1(ey) + ' ';
+    }
+    return s + '<path d="' + sep + '" stroke="#3F7A2E" stroke-width="2.2" stroke-linecap="round"/>';
+  }
+
+  function plantSVG(p, S, brix) {
+    var P = stemPts(p, S), x0 = PLANT_X[p], s = '';
+    var tie = bez(P, 0.8);
+    s += '<path d="M' + x0 + ' 100 L' + n1(tie[0]) + ' ' + n1(tie[1]) + '" stroke="#D9D2C3" stroke-width="1.5"/>';
+    var nodes = [0.1, 0.22, 0.34, 0.46, 0.58, 0.7, 0.81, 0.91];
+    var leaves = '', fruits = '';
+    nodes.forEach(function (u, i) {
+      var pt = bez(P, u), side = (i + p) % 2 ? 1 : -1;
+      var L = (u < 0.3 ? 98 : u > 0.85 ? 58 : 88) * (1 - 0.12 * S);
+      var ang = side > 0 ? -26 + S * 62 + (u > 0.85 ? -15 : 0) : 206 - S * 62 + (u > 0.85 ? 15 : 0);
+      var flip = side > 0 ? '' : ' scale(1 -1)';
+      leaves += '<g transform="translate(' + n1(pt[0]) + ' ' + n1(pt[1]) + ') rotate(' + n1(ang) + ')' + flip + '">' + compoundLeaf(L, S, u < 0.3) + '</g>';
+      // 꽃송이(과방): 일부 마디의 반대쪽
+      if (i === 1 || i === 3 || i === 5) {
+        var k = (i - 1) / 2, n = k === 2 ? 3 : 4, hue = (p + k) % 3;
+        var R = (17 - k * 1.5) * (1 - 0.3 * S), dx = -side * 26, ax = pt[0] + dx, ay = pt[1] + 18 + S * 8;
+        fruits += '<path d="M' + n1(pt[0]) + ' ' + n1(pt[1]) + ' Q' + n1(pt[0] + dx * 0.7) + ' ' + n1(pt[1] - 8) + ' ' + n1(ax) + ' ' + n1(ay - R) + '" stroke="#4F8A36" stroke-width="2.5" fill="none"/>';
+        var offs = [[0, 0], [-side * 1.15, 0.55], [-side * 0.15, 1.25], [-side * 1.3, 1.6]];
+        for (var f = n - 1; f >= 0; f--) fruits += fruit(ax + offs[f][0] * R, ay + offs[f][1] * R, R * (1 - f * 0.05), hue);
       }
     });
-    // 물방울 (관수 10%당 1개)
-    var dg = $('drops'); dg.innerHTML = '';
-    var nd = Math.round(ratio * 10);
+    var stem = 'M' + P[0][0] + ' ' + P[0][1] + ' C' + P[1].join(' ') + ' ' + P[2].map(n1).join(' ') + ' ' + P[3].map(n1).join(' ');
+    s += '<path d="' + stem + '" stroke="url(#stemG)" stroke-width="9" fill="none" stroke-linecap="round"/>';
+    s += '<path d="' + stem + '" stroke="#C7E3A6" stroke-width="1.2" fill="none" opacity=".6" stroke-dasharray="1 5"/>';
+    return s + leaves + fruits;
+  }
+
+  var house = { vis: null, tgt: null, raf: 0, built: false };
+  function buildStatic() {
+    var sl = '', dr = '<path d="M60 432 L740 432" stroke="#1D1F1E" stroke-width="5" stroke-linecap="round"/>';
+    PLANT_X.forEach(function (x, p) {
+      sl += '<rect x="' + (x - 88) + '" y="440" width="176" height="30" rx="5" fill="url(#slab)" stroke="#B9C0BB"/>' +
+        '<rect class="wet" x="' + (x - 84) + '" y="441" width="168" height="7" rx="3"/>' +
+        '<text x="' + x + '" y="462" text-anchor="middle" font-size="11" fill="#8A938D">배지</text>';
+      [-42, 42].forEach(function (o, j) {
+        var ex = x + o;
+        dr += '<path d="M' + ex + ' 432 L' + (ex + 6) + ' 446" stroke="#1D1F1E" stroke-width="2.5"/>' +
+          '<circle cx="' + ex + '" cy="432" r="4" fill="#E04A2E"/>' +
+          '<path class="fall" data-i="' + (p * 2 + j) + '" d="M' + (ex + 6) + ' 446 q3 5 0 7 q-3 -2 0 -7z" fill="#4B9BE0"/>';
+      });
+    });
+    $('slabs').innerHTML = sl; $('drip').innerHTML = dr;
+    house.built = true;
+  }
+
+  function drawPlants(v) {
+    var S = v.S;
+    $('lg0').setAttribute('stop-color', hsl(112 - 50 * S, 52 - 12 * S, 46 + 8 * S));
+    $('lg1').setAttribute('stop-color', hsl(116 - 42 * S, 55 - 15 * S, 26 + 8 * S));
+    $('lo0').setAttribute('stop-color', hsl(84 - 30 * S, 48 - 8 * S, 50 + 6 * S));
+    $('lo1').setAttribute('stop-color', hsl(96 - 30 * S, 45 - 10 * S, 30 + 6 * S));
+    var L = Math.max(34, Math.min(56, 54 - (v.brix - 5) * 4));
+    FRUIT_HUE.forEach(function (h, i) {
+      var st = $('fr' + i).children;
+      st[0].setAttribute('stop-color', hsl(h + 6, 95, L + 22));
+      st[1].setAttribute('stop-color', hsl(h, 88, L));
+      st[2].setAttribute('stop-color', hsl(h - 4, 82, L - 20));
+    });
+    var s = '';
+    for (var p = 0; p < 3; p++) s += plantSVG(p, S, v.brix);
+    $('plants').innerHTML = s;
+    // 센서를 가운데 줄기에 붙임
+    var pt = bez(stemPts(1, S), 0.62);
+    $('sensor').setAttribute('transform', 'translate(' + n1(pt[0] + 6) + ' ' + n1(pt[1]) + ')');
+    var dy = 466 - pt[1];
+    $('cable').setAttribute('d', 'M8 16 C 50 ' + n1(dy * 0.4) + ', 10 ' + n1(dy * 0.7) + ', 46 ' + n1(dy));
+    var w = $('waves'), c = v.clicks;
+    w.querySelectorAll('circle').forEach(function (e) { e.setAttribute('r', n1(22 + Math.min(c, 45) * 3.4)); });
+    w.style.setProperty('--dur', Math.max(0.7, 3.2 - c * 0.07).toFixed(2) + 's');
+    w.style.opacity = c < 1 ? 0.35 : 1;
+  }
+
+  function drawStatic(t) {
+    if (!house.built) buildStatic();
+    var m = Math.max(0, Math.min(1, (t.ratio - 0.3) / 0.8));
+    document.querySelectorAll('#slabs .wet').forEach(function (e) {
+      e.setAttribute('fill', 'rgb(' + Math.round(205 - 110 * m) + ',' + Math.round(184 - 105 * m) + ',' + Math.round(146 - 95 * m) + ')');
+    });
+    var active = Math.round(Math.min(1, t.ratio) * 6);
+    document.querySelectorAll('#drip .fall').forEach(function (e) {
+      var on = +e.getAttribute('data-i') < active;
+      e.style.display = on ? '' : 'none';
+      e.style.animationDuration = (1.6 - Math.min(1, t.ratio)) + 's';
+    });
+    var nd = Math.round(t.ratio * 10), ic = '';
     for (var i = 0; i < nd; i++) {
-      var dx = 50 + i * 48, dy = 428 + (i % 2) * 10;
-      el('path', { d: 'M' + dx + ' ' + (dy - 11) + ' Q' + (dx + 8) + ' ' + (dy - 1) + ' ' + dx + ' ' + (dy + 4) + ' Q' + (dx - 8) + ' ' + (dy - 1) + ' ' + dx + ' ' + (dy - 11) + ' Z',
-        fill: '#5FA8E8', stroke: '#2F6DB5', 'stroke-width': 1.2 }, dg);
+      var dx = 52 + i * 32, dy = 525;
+      ic += '<path d="M' + dx + ' ' + (dy - 14) + ' Q' + (dx + 10) + ' ' + (dy - 1) + ' ' + dx + ' ' + (dy + 5) + ' Q' + (dx - 10) + ' ' + (dy - 1) + ' ' + dx + ' ' + (dy - 14) + ' Z" fill="#4B9BE0" stroke="#1E4F8A" stroke-width="1.2"/>' +
+        '<ellipse cx="' + (dx - 3) + '" cy="' + (dy - 3) + '" rx="2" ry="3" fill="#fff" opacity=".7"/>';
     }
-    $('dropLabel').textContent = '물방울 ' + nd + '개 = 관수 ' + Math.round(ratio * 100) + '%';
-    // 음파 고리 (클릭 수에 비례)
-    var rg = $('rings'); rg.innerHTML = '';
-    var base = 16 + Math.min(clicks, 45) * 2.6;
-    var col = alarm ? C.red : clicks >= 5 ? C.blue : C.green;
-    for (var q = 0; q < 3; q++) {
-      el('circle', { cx: 0, cy: 0, r: base * (0.45 + q * 0.3), fill: 'none', stroke: col, 'stroke-width': 3 - q * 0.6, opacity: (0.75 - q * 0.2).toFixed(2) }, rg);
-    }
+    $('dropIcons').innerHTML = ic;
+    $('dropLabel').textContent = '물방울 ' + nd + '개 = 관수 ' + Math.round(t.ratio * 100) + '%';
+    var heat = t.weather === 'heat';
+    $('sky').setAttribute('fill', heat ? 'url(#skyH)' : 'url(#skyN)');
+    $('sunCore').setAttribute('fill', heat ? 'url(#sunHG)' : 'url(#sunG)');
+    $('sunCore').setAttribute('r', heat ? 140 : 90);
+    $('thermoText').textContent = heat ? '기온 35°C · 폭염' : '기온 26°C · 보통';
+    $('thermoText').setAttribute('fill', heat ? C.red : C.ink);
+    $('vignette').setAttribute('class', t.alarm ? 'alarmOn' : '');
+    var col = t.alarm ? C.red : t.clicks >= 5 ? C.blue : C.green;
+    $('waves').style.setProperty('--wc', col);
+    $('led').setAttribute('fill', t.alarm ? '#FF5A3C' : t.clicks >= 5 ? '#6FA8FF' : '#47E58F');
+  }
+
+  function tickHouse() {
+    house.raf = 0;
+    var v = house.vis, t = house.tgt, moving = false;
+    ['S', 'clicks', 'brix'].forEach(function (k) {
+      var d = t[k] - v[k];
+      if (Math.abs(d) > 0.002) { v[k] += d * 0.16; moving = true; } else v[k] = t[k];
+    });
+    drawPlants(v);
+    if (moving) house.raf = requestAnimationFrame(tickHouse);
+  }
+  function drawHouse(t) {
+    house.tgt = t;
+    if (!house.vis) house.vis = { S: t.S, clicks: t.clicks, brix: t.brix };
+    drawStatic(t);
+    if (!house.raf) house.raf = requestAnimationFrame(tickHouse);
   }
 
   // ── 표시 ──
+  function stressWord(S) { return S < 0.15 ? '편안' : S < 0.4 ? '약함' : S < 0.6 ? '보통' : S < 0.8 ? '강함' : '매우 강함'; }
+  // 오늘 상태를 쉬운 말로
+  function explain(res, t) {
+    var ph = res.phase[t], P = res.params, s = '';
+    if (ph === 'alarm') s = res.mode === 'brake' ? '🚨 <b>소리가 급증했어요!</b> 식물이 많이 목말라해서 오늘 바로 100%로 물을 줬어요.'
+      : '🚨 <b>소리가 경보 수준이에요.</b> 이대로 두면 수량이 크게 줄 수 있어요.';
+    else if (ph === 'hold') s = '✋ <b>소리가 늘어서 감량을 멈췄어요.</b> 한 단계 되돌려 그 수준을 유지합니다.';
+    else if (ph === 'reduce') s = res.S[t] < P.sustainS ? '💧 <b>물을 줄이기 시작했어요.</b> 아직 식물은 괜찮아요.'
+      : '💧 <b>물을 줄여 스트레스가 쌓이는 중이에요.</b> 계속되면 당도가 오르고 열매는 작아져요.';
+    else s = res.weather === 'heat' ? '☀️ <b>물은 충분하지만 폭염이에요.</b> 식물이 조금 지쳐 있어요.' : '🌿 <b>물이 충분해요.</b> 식물이 조용하고 편안해요.';
+    return s;
+  }
   var BADGE = { normal: '정상', reduce: '감량 중', hold: '멈춤 (소리 증가)', alarm: '경보 (급증)' };
   function sign(v, d) { return (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v).toFixed(d); }
   // words: { inc: 늘었을 때 말, dec: 줄었을 때 말 }
@@ -496,7 +761,7 @@
     var e = $(id), flat = Math.abs(v) < Math.pow(10, -d) / 2;
     e.className = 'd ' + (flat ? 'flat' : (v > 0) === goodWhenUp ? 'up' : 'down');
     var w = words ? ' ' + (v > 0 ? words.inc : words.dec) : '';
-    e.textContent = (flat ? '변화 없음' : (v > 0 ? '▲ ' : '▼ ') + sign(v, d) + unit + w) + ' (일반 대비)';
+    e.textContent = flat ? '변화 없음' : (v > 0 ? '▲ ' : '▼ ') + sign(v, d) + unit + w;
   }
   function fmt(n) { return Math.round(n).toLocaleString('ko-KR'); }
 
@@ -508,17 +773,16 @@
     b.className = 'badge ' + ph; b.textContent = BADGE[ph];
     $('rRatio').textContent = Math.round(res.ratio[t] * 100) + '%';
     $('rClick').textContent = res.clicks[t].toFixed(1);
-    $('rS').textContent = res.S[t].toFixed(2);
+    $('rS').innerHTML = res.S[t].toFixed(2) + ' <small>' + stressWord(res.S[t]) + '</small>';
     $('rBrix').textContent = res.brix[t].toFixed(1);
-    drawHouse(res.S[t], res.ratio[t], res.clicks[t], res.brix[t], res.alarm[t]);
+    drawHouse({ S: res.S[t], ratio: res.ratio[t], clicks: res.clicks[t], brix: res.brix[t], alarm: res.alarm[t], weather: res.weather });
+    $('explain').innerHTML = explain(res, t);
     drawCharts();
 
     $('kBrix').innerHTML = sm.brix.toFixed(1) + ' <small>Brix' + (sm.brix >= res.params.highBrix ? ' · 고당도' : '') + '</small>';
     setDelta('dBrix', sm.brixDelta, 1, '', true);
     $('kYield').innerHTML = sm.yieldPct.toFixed(1) + '<small>%</small>';
     setDelta('dYield', sm.yieldPct - 100, 1, '%p', true, { inc: '증가', dec: '감소' });
-    $('kIncome').innerHTML = fmt(sm.income) + ' <small>만 원</small>';
-    setDelta('dIncome', sm.incomeDelta, 0, '만 원', true, { inc: '이익', dec: '손해' });
     $('kWater').innerHTML = sm.waterPct.toFixed(0) + '<small>%</small>';
     setDelta('dWater', sm.waterPct - 100, 0, '%p', false, { inc: '더 씀', dec: '절약' });
     updateSoundRate();
@@ -541,7 +805,7 @@
   $('reset').onclick = function () { stop(); state.t = 0; render(); };
   $('speed').oninput = function () { syncLabels(); if (state.timer) play(); };
 
-  ['ratio', 'days', 'premium'].forEach(function (id) {
+  ['ratio', 'days'].forEach(function (id) {
     $(id).oninput = function () { syncLabels(); recompute(true); };
   });
   document.querySelectorAll('input[name=mode], input[name=weather]').forEach(function (r) {
@@ -576,17 +840,17 @@
   // ── 세 방식 비교 ──
   var cmpData = null;
   function condText(o) {
-    return '조건: ' + (o.weather === 'heat' ? '폭염' : '보통') + ' · ' + o.days + '일 · 고당도 프리미엄 ' + Math.round(o.premium * 100) + '% · 시드 ' + o.seed;
+    return '조건: ' + (o.weather === 'heat' ? '폭염' : '보통') + ' · ' + o.days + '일 · 시드 ' + o.seed;
   }
   function openCompare() {
     stop();
     var o = opts();
     cmpData = { o: o, groups: M.compareAll(o) };
     $('cmpCond').textContent = condText(o);
-    var rows = [['방식', '당도 (Brix)', '일반 대비 당도', '수량 (일반 대비 %)', '10a당 연 소득 (만 원)', '일반 대비 소득 (만 원)', '물 사용량 (%)', '경보 (회)']];
+    var rows = [['방식', '당도 (Brix)', '일반 대비 당도', '수량 (일반 대비 %)', '물 사용량 (%)', '경보 (회)']];
     cmpData.groups.forEach(function (g) {
       var s = g.summary;
-      rows.push([g.name, s.brix.toFixed(2), sign(s.brixDelta, 2), s.yieldPct.toFixed(1), fmt(s.income), sign(s.incomeDelta, 0), s.waterPct.toFixed(0), s.alarms]);
+      rows.push([g.name, s.brix.toFixed(2), sign(s.brixDelta, 2), s.yieldPct.toFixed(1), s.waterPct.toFixed(0), s.alarms]);
     });
     cmpData.rows = rows;
     $('cmpTable').innerHTML = rows.map(function (r, i) {
@@ -606,10 +870,9 @@
     var metrics = [
       { name: '당도 (Brix)', get: function (s) { return s.brix; }, f: function (v) { return v.toFixed(1); }, ref: data.o.params && data.o.params.highBrix || M.DEFAULTS.highBrix, refL: '고당도' },
       { name: '수량 (일반 대비 %)', get: function (s) { return s.yieldPct; }, f: function (v) { return v.toFixed(1) + '%'; } },
-      { name: '10a당 연 소득 (만 원)', get: function (s) { return s.income; }, f: fmt },
       { name: '물 사용량 (일반 대비 %)', get: function (s) { return s.waterPct; }, f: function (v) { return v.toFixed(0) + '%'; } }
     ];
-    var pw = (W - 100) / 4, top = 150, ch = 520;
+    var pw = (W - 100) / metrics.length, top = 150, ch = 520;
     metrics.forEach(function (m, mi) {
       var x0 = 50 + mi * pw, vals = data.groups.map(function (gr) { return m.get(gr.summary); });
       var vmax = Math.max.apply(null, vals.concat(m.ref || 0)) * 1.15;
@@ -670,7 +933,8 @@
       inp.classList.toggle('changed', k in state.params);
       inp.onchange = function () {
         var v = parseFloat(inp.value);
-        if (isNaN(v) || v === M.DEFAULTS[k]) { delete state.params[k]; inp.value = M.DEFAULTS[k]; } else state.params[k] = v;
+        if (isNaN(v) || v === M.DEFAULTS[k]) { delete state.params[k]; inp.value = M.DEFAULTS[k]; }
+        else { state.params[k] = M.mergeParams(state.params)[k] === v ? v : M.LIMITS[k] ? Math.min(M.LIMITS[k][1], Math.max(M.LIMITS[k][0], v)) : v; inp.value = state.params[k]; }
         inp.classList.toggle('changed', k in state.params);
         recompute(true);
       };

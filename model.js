@@ -49,11 +49,7 @@
     brakeDelta: 4.0,        // 대조 구역보다 이만큼(회/시간) 늘면 "뚜렷한 증가" - 가정
     brakeLine: 5,           // 그래프 브레이크 기준선 (회/시간) - 발표 설계
     alarmLine: 15,          // 경보 기준 (회/시간) - 발표 설계
-    alarmRecoverDays: 3,    // 경보 후 100% 유지 일수 - 가정
-
-    // ── 소득 (10a 기준, 만 원) ──
-    baseRevenue: 4202,      // 10a 총수입 4,202만 원 - 농촌진흥청 2024 농산물소득조사 (토마토 수경)
-    baseIncome: 2437        // 10a 소득 2,437만 원 - 농촌진흥청 2024 농산물소득조사 (토마토 수경)
+    alarmRecoverDays: 3     // 경보 후 100% 유지 일수 - 가정
   };
 
   // 화면 표시용 설명 (근거 표·가정값 편집 패널)
@@ -83,9 +79,7 @@
     brakeDelta: ['브레이크 판정: 대조 대비 증가 (회/시간)', '가정'],
     brakeLine: ['브레이크 기준선 (회/시간)', '발표 설계'],
     alarmLine: ['경보 기준 (회/시간)', '발표 설계'],
-    alarmRecoverDays: ['경보 후 100% 유지 (일)', '가정'],
-    baseRevenue: ['10a 총수입 (만 원)', '농촌진흥청 2024'],
-    baseIncome: ['10a 소득 (만 원)', '농촌진흥청 2024']
+    alarmRecoverDays: ['경보 후 100% 유지 (일)', '가정']
   };
 
   var EVIDENCE = [
@@ -96,9 +90,7 @@
     ['당도가 오르는 조건', '스트레스가 "지속"될 때만 상승', 'Plants (2024)'],
     ['정상 식물 클릭', '시간당 1회 미만', 'Khait et al., Cell (2023)'],
     ['건조 식물 클릭', '평균 시간당 35.4회', 'Cell (2023), KISTI 과학향기'],
-    ['단수 후 클릭 변화', '4~5일째 최고점 후 감소', 'Cell (2023), Science News Explores'],
-    ['10a 기준 소득', '2,437만 원 (토마토 수경 사례)', '농촌진흥청 2024 농산물소득조사'],
-    ['10a 기준 총수입', '4,202만 원', '농촌진흥청 2024']
+    ['단수 후 클릭 변화', '4~5일째 최고점 후 감소', 'Cell (2023), Science News Explores']
   ];
 
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
@@ -119,10 +111,24 @@
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   }
 
+  // 계수 허용 범위 [최소, 최대]. 화면에서 0·음수 같은 값을 넣어도 계산이 깨지지 않게 함.
+  var LIMITS = {
+    baseBrix: [1, 15], highBrix: [1, 20], maxBrixRise: [0, 10], sustainS: [0, 0.99], sustainMinDays: [0, 30],
+    brixTau: [0.1, 100], stressAccum: [0, 1], stressRecover: [0, 1], heatMultiplier: [1, 5], heatBaseDeficit: [0, 0.5],
+    yieldLinear: [0, 1], yieldQuadThreshold: [0, 1], yieldQuad: [0, 20], clickBase: [0, 10], clickMax: [0, 200],
+    clickExp: [0.1, 5], severeS: [0.01, 1], fatigueOnsetDays: [0, 30], fatigueTau: [0.1, 100], clickNoise: [0, 1],
+    brakeStep: [0.01, 0.5], brakeFloor: [0, 1], brakeDelta: [0, 1000], brakeLine: [0, 200], alarmLine: [0.1, 1000],
+    alarmRecoverDays: [0, 30]
+  };
+
   function mergeParams(over) {
     var p = {};
     for (var k in DEFAULTS) p[k] = DEFAULTS[k];
-    if (over) for (var j in over) if (over[j] !== undefined && j in DEFAULTS) p[j] = +over[j];
+    if (over) for (var j in over) {
+      var v = +over[j];
+      if (j in DEFAULTS && over[j] !== '' && over[j] !== null && isFinite(v)) p[j] = LIMITS[j] ? clamp(v, LIMITS[j][0], LIMITS[j][1]) : v;
+    }
+    if (p.highBrix <= p.baseBrix) p.highBrix = p.baseBrix + 0.1; // 고당도 기준은 일반 당도보다 커야 함
     return p;
   }
 
@@ -150,11 +156,6 @@
     var q = Math.max(0, S - P.yieldQuadThreshold);
     return clamp(1 - P.yieldLinear * S - P.yieldQuad * q * q, 0, 1);
   }
-  function incomeOf(yieldRatio, brix, premium, P) {
-    var h = clamp((brix - P.baseBrix) / (P.highBrix - P.baseBrix), 0, 1);
-    var revenue = P.baseRevenue * yieldRatio * (1 + premium * h);
-    return P.baseIncome + (revenue - P.baseRevenue);
-  }
 
   /*
    * opts: {
@@ -162,7 +163,6 @@
    *   ratio: 고정 감량 비율 (0~1.1, mode='fixed'),
    *   weather: 'normal' | 'heat',
    *   days: 재배 기간 (일),
-   *   premium: 고당도 단가 프리미엄 (0~0.7),
    *   seed: 난수 시드,
    *   params: DEFAULTS 덮어쓰기
    * }
@@ -171,18 +171,17 @@
     opts = opts || {};
     var P = mergeParams(opts.params);
     var mode = opts.mode || 'full';
-    var days = Math.max(1, Math.round(opts.days || 30));
+    var days = Math.min(365, Math.max(1, Math.round(+opts.days || 30)));
     var heat = opts.weather === 'heat';
-    var premium = opts.premium == null ? 0.3 : +opts.premium;
     var fixedRatio = mode === 'full' ? 1.0 : (opts.ratio == null ? 0.7 : +opts.ratio);
-    var seed = opts.seed == null ? 42 : opts.seed;
+    var seed = isFinite(+opts.seed) && opts.seed !== '' && opts.seed != null ? +opts.seed : 42;
     var rngT = makeRng(seed), rngC = makeRng(seed + 7919);
 
     var zone = newZone(), ctrl = newZone();
     var out = {
       days: days, mode: mode, weather: heat ? 'heat' : 'normal', params: P,
       ratio: [], clicks: [], ctrlClicks: [], S: [], brix: [], phase: [], alarm: [],
-      yieldRatio: [], water: [], income: [], alarms: 0
+      yieldRatio: [], water: [], alarms: 0
     };
 
     // 소리 브레이크 상태
@@ -237,7 +236,6 @@
       out.alarm.push(alarm);
       out.yieldRatio.push(yr);
       out.water.push(wSum / (t + 1));
-      out.income.push(incomeOf(yr, bx, premium, P));
     }
     return out;
   }
@@ -253,8 +251,6 @@
       brix: res.brix[t],
       brixDelta: res.brix[t] - base.brix[bt],
       yieldPct: 100 * res.yieldRatio[t] / base.yieldRatio[bt],
-      income: res.income[t],
-      incomeDelta: res.income[t] - base.income[bt],
       waterPct: 100 * res.water[t] / base.water[bt],
       meanClicks: sumC / (t + 1),
       alarms: res.alarm.slice(0, t + 1).filter(Boolean).length
@@ -268,6 +264,17 @@
     bo.mode = 'full';
     var base = simulate(bo);
     return { res: res, base: base, summary: summarize(res, base) };
+  }
+
+  // 관수 비율별 최종 당도 (관계 그래프용). 같은 조건에서 고정 감량만 바꿔 계산.
+  function brixCurve(opts, ratios) {
+    return ratios.map(function (r) {
+      var o = {};
+      for (var k in opts) o[k] = opts[k];
+      o.mode = 'fixed'; o.ratio = r;
+      var res = simulate(o);
+      return { ratio: r, brix: res.brix[res.days - 1], yieldRatio: res.yieldRatio[res.days - 1] };
+    });
   }
 
   // 세 방식 비교 (발표 파일럿 설계와 같은 3그룹)
@@ -288,8 +295,8 @@
   }
 
   return {
-    DEFAULTS: DEFAULTS, PARAM_META: PARAM_META, EVIDENCE: EVIDENCE,
-    simulate: simulate, summarize: summarize, run: run, compareAll: compareAll,
+    DEFAULTS: DEFAULTS, LIMITS: LIMITS, mergeParams: mergeParams, PARAM_META: PARAM_META, EVIDENCE: EVIDENCE,
+    simulate: simulate, summarize: summarize, run: run, compareAll: compareAll, brixCurve: brixCurve,
     makeRng: makeRng
   };
 });
