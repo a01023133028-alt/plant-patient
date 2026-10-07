@@ -82,16 +82,7 @@
     alarmRecoverDays: ['경보 후 100% 유지 (일)', '가정']
   };
 
-  var EVIDENCE = [
-    ['일반 당도', '약 5 Brix (일반 범위 3~7)', '이소셜타임즈, 전남농업기술원(2004)'],
-    ['고당도 기준', '8 Brix 이상', '이소셜타임즈 (대저 짭짤이 기준)'],
-    ['관수 제한 시 수량', '−12~13% (방울형), 최대 −24% (대과형)', 'Alomari-Mheidat et al., Plants (2024)'],
-    ['관수 제한 시 과실 무게', '평균 −7~15%', 'Plants (2024)'],
-    ['당도가 오르는 조건', '스트레스가 "지속"될 때만 상승', 'Plants (2024)'],
-    ['정상 식물 클릭', '시간당 1회 미만', 'Khait et al., Cell (2023)'],
-    ['건조 식물 클릭', '평균 시간당 35.4회', 'Cell (2023), KISTI 과학향기'],
-    ['단수 후 클릭 변화', '4~5일째 최고점 후 감소', 'Cell (2023), Science News Explores']
-  ];
+  var EVIDENCE; // 아래 CROPS.tomato.evidence (하위 호환)
 
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 
@@ -121,9 +112,12 @@
     alarmRecoverDays: [0, 30]
   };
 
-  function mergeParams(over) {
+  // 기본값 ← 작물 설정 ← 화면에서 고친 값 순서로 덮어씀
+  function mergeParams(over, crop) {
     var p = {};
     for (var k in DEFAULTS) p[k] = DEFAULTS[k];
+    var cp = crop && CROPS[crop] ? CROPS[crop].params : null;
+    if (cp) for (var c in cp) p[c] = cp[c];
     if (over) for (var j in over) {
       var v = +over[j];
       if (j in DEFAULTS && over[j] !== '' && over[j] !== null && isFinite(v)) p[j] = LIMITS[j] ? clamp(v, LIMITS[j][0], LIMITS[j][1]) : v;
@@ -164,12 +158,14 @@
    *   weather: 'normal' | 'heat',
    *   days: 재배 기간 (일),
    *   seed: 난수 시드,
+   *   crop: 작물 키 (CROPS, 기본 'tomato'),
    *   params: DEFAULTS 덮어쓰기
    * }
    */
   function simulate(opts) {
     opts = opts || {};
-    var P = mergeParams(opts.params);
+    var crop = opts.crop && CROPS[opts.crop] ? opts.crop : 'tomato';
+    var P = mergeParams(opts.params, crop);
     var mode = opts.mode || 'full';
     var days = Math.min(365, Math.max(1, Math.round(+opts.days || 30)));
     var heat = opts.weather === 'heat';
@@ -179,7 +175,7 @@
 
     var zone = newZone(), ctrl = newZone();
     var out = {
-      days: days, mode: mode, weather: heat ? 'heat' : 'normal', params: P,
+      days: days, mode: mode, crop: crop, weather: heat ? 'heat' : 'normal', params: P,
       ratio: [], clicks: [], ctrlClicks: [], S: [], brix: [], phase: [], alarm: [],
       yieldRatio: [], water: [], alarms: 0
     };
@@ -266,6 +262,159 @@
     return { res: res, base: base, summary: summarize(res, base) };
   }
 
+  /*
+   * 작물별 설정. params는 DEFAULTS를 덮어씁니다.
+   * evidence: [항목, 값, 출처, 확인 수준]
+   *   확인 수준 - '원문 확인': 논문·자료 원문(PDF)에서 수치를 직접 확인
+   *               '초록 확인': 논문 초록에서 확인 (본문은 못 봄)
+   *               '검색 요약': 검색 결과 요약으로만 확인
+   *               '가정': 근거 없이 정한 값
+   * targets: 문헌 목표와 모델 결과 비교 (check: true면 test.js가 검사)
+   *   metric 'brixDelta' = 100% 관수 대비 당도 증가 (Brix), 'yieldPct' = 100% 대비 수량 (%)
+   */
+  var CLICK_EVIDENCE = [
+    ['정상 식물 클릭', '대조군 모두 시간당 1회 미만', 'Khait et al., Cell 186:1328 (2023)', '원문 확인'],
+    ['건조 식물 클릭', '토마토 35.4±6.1회/시간, 담배 11.0±1.4회/시간', 'Khait et al., Cell (2023)', '원문 확인'],
+    ['단수 후 클릭 변화', '물을 준 뒤 4~5일간 늘다가 마르면서 감소', 'Khait et al., Cell (2023)', '원문 확인']
+  ];
+  var CLICK_BORROWED = ['이 작물의 클릭 소리', '측정 자료 없음 → 토마토 값 그대로 사용', 'Cell (2023)은 토마토·담배를 측정, 밀·옥수수·포도·선인장은 녹음만 성공', '가정'];
+
+  var CROPS = {
+    tomato: {
+      name: '토마토 (기본)', fruit: 'tomato', params: {},
+      note: '발표 기본 모델. 프롬프트 기준(70%: 당도 +1.5 이상, 수량 −8~16%)에 맞춤. 원문과 비교하면 수량을 더 크게 깎는 쪽(보수적)입니다.',
+      evidence: [
+        ['일반 당도', '약 5 Brix (일반 범위 3~7)', '이소셜타임즈, 전남농업기술원(2004)', '검색 요약'],
+        ['고당도 기준', '8 Brix 이상만 "대저 짭짤이"', '이소셜타임즈 (대저 짭짤이)', '검색 요약'],
+        ['수량 (물 47%·13% 공급, 방울형)', '−12%, −13% (통계적으로 유의하지 않음)', 'Alomari-Mheidat et al., Plants 13:128 (2024)', '원문 확인'],
+        ['수량 (물 15% 공급, 대과 Marmande)', '−24% (유의하지 않음)', 'Plants (2024)', '원문 확인'],
+        ['과실 무게', '평균 −7%, −15% (방울형), −14% (대과형)', 'Plants (2024)', '원문 확인'],
+        ['당도가 오르는 조건', '스트레스가 "지속"될 때만 증가', 'Plants (2024) 초록', '원문 확인'],
+        ['가공용 토마토 메타분석', '물 부족 관수: 수량 감소(평균 −18.6 t/ha), 당도·비타민C 증가 (25편, 561처리)', 'Agricultural Water Management 222:301 (2019)', '초록 확인'],
+        ['당도 증가 폭', '부분근권건조 +26%, 방울토마토 +12~16%', '토마토 관수 연구들 (검색 요약)', '검색 요약']
+      ].concat(CLICK_EVIDENCE),
+      targets: [
+        { label: '70% 관수: 당도 +1.5 이상', ratio: 0.7, days: 30, metric: 'brixDelta', lo: 1.5, hi: 99, source: '프롬프트 기준', check: true },
+        { label: '70% 관수: 수량 −8~−16%', ratio: 0.7, days: 30, metric: 'yieldPct', lo: 84, hi: 92, source: '프롬프트 기준 (논문 원문은 물 47%에서 −12%)', check: true },
+        { label: '참고: 당도 +12~26% (= +0.6~1.3 Brix)', ratio: 0.7, days: 30, metric: 'brixDelta', lo: 0.6, hi: 1.3, source: '토마토 관수 연구 (검색 요약)', check: false },
+        { label: '참고: 물 47%에서 수량 −12% (유의하지 않음)', ratio: 0.47, days: 30, metric: 'yieldPct', lo: 85, hi: 95, source: 'Plants (2024) 원문', check: false }
+      ]
+    },
+    tomatoPaper: {
+      name: '토마토 (논문 기준)', fruit: 'tomato',
+      params: { maxBrixRise: 1.22, yieldLinear: 0.193, yieldQuad: 0 },
+      note: 'Plants (2024) 원문에 맞춘 설정: 물 47%에서 수량 −12%, 당도 +1.0 정도. 기본 설정보다 물을 줄여도 손해가 작고 당도도 덜 오릅니다.',
+      evidence: [
+        ['수량 (물 47% 공급, 방울형 2020)', '−12% (통계적으로 유의하지 않음)', 'Alomari-Mheidat et al., Plants 13:128 (2024)', '원문 확인'],
+        ['과실 무게', '평균 −7~15%', 'Plants (2024)', '원문 확인'],
+        ['당도', '스트레스가 지속될 때만 증가 (그래프로만 제시, 증가 폭 수치 없음)', 'Plants (2024)', '원문 확인'],
+        ['당도 증가 폭', '+12~26% (방울토마토·부분근권건조 연구)', '토마토 관수 연구들', '검색 요약'],
+        ['강한 스트레스의 추가 손해', '근거 부족 → 제곱항 없앰', '-', '가정']
+      ].concat(CLICK_EVIDENCE),
+      targets: [
+        { label: '물 47%: 수량 −5~−15% (논문 −12%)', ratio: 0.47, days: 30, metric: 'yieldPct', lo: 85, hi: 95, source: 'Plants (2024) 원문', check: true },
+        { label: '물 47%: 당도 +0.6~1.3 Brix (+12~26%)', ratio: 0.47, days: 30, metric: 'brixDelta', lo: 0.6, hi: 1.3, source: '토마토 관수 연구 (검색 요약)', check: true }
+      ]
+    },
+    cherry: {
+      name: '방울토마토', fruit: 'cherry',
+      params: { baseBrix: 7, highBrix: 9, maxBrixRise: 1.7, yieldLinear: 0.255 },
+      note: '당도 증가 +12~16%, 가을 작기 수량 감소 5~20%에 맞춤.',
+      evidence: [
+        ['일반 당도', '7 Brix로 둠', '-', '가정'],
+        ['고당도 기준', '9 Brix로 둠', '-', '가정'],
+        ['물 부족 관수 시 당도', '+15.73% (두 품종 모두)', 'Agriculture 11:669 (2021), 잎 수분퍼텐셜 기반 관수', '검색 요약'],
+        ['물 부족 관수 시 당도', '+12.44%', '방울토마토 Summerbrix·Lazarino 연구', '검색 요약'],
+        ['수량 (Summerbrix·Lazarino)', '가을 작기는 뚜렷한 차이 없음, 봄 작기는 감소 (물 85% 절약)', 'Agricultural Water Management, 방울토마토 RDI', '초록 확인'],
+        ['수량 감소 폭', '가을 작기 −5~20%, 봄 작기 −60~62%', '같은 연구', '검색 요약']
+      ].concat(CLICK_EVIDENCE),
+      targets: [
+        { label: '70% 관수: 당도 +12~16% (= +0.8~1.1 Brix)', ratio: 0.7, days: 30, metric: 'brixDelta', lo: 0.8, hi: 1.15, source: 'Agriculture (2021) 외', check: true },
+        { label: '70% 관수: 수량 −5~−20%', ratio: 0.7, days: 30, metric: 'yieldPct', lo: 80, hi: 95, source: 'Summerbrix·Lazarino 가을 작기', check: true }
+      ]
+    },
+    strawberry: {
+      name: '딸기', fruit: 'strawberry',
+      params: { baseBrix: 9, highBrix: 11, maxBrixRise: 0.4, yieldLinear: 0.84 },
+      note: '수량은 크게 줄고, 당도는 연구에 따라 증가·변화 없음·감소가 모두 보고됨. 당도 상승을 아주 작게 잡음. 물을 줄여 얻는 것이 적은 작물.',
+      evidence: [
+        ['일반 당도', '9 Brix로 둠', '-', '가정'],
+        ['고당도 기준', '11 Brix로 둠', '-', '가정'],
+        ['Malling Ace (사철 딸기, 10개월)', '상품 수량 −30~36%, 당도 변화 없음', 'Frontiers in Horticulture (2025), NIAB', '검색 요약'],
+        ['San Andreas (관수 100·80·60%)', '물을 줄일수록 수량·과중 감소, 당도·경도·산 증가', 'Applied Fruit Science (2025)', '초록 확인'],
+        ['정식 직후부터 물 줄이기', '환원당 −25.1%, 과중 −12.6% (당이 오히려 감소)', 'Hortic. Environ. Biotechnol. (2023)', '초록 확인'],
+        ['개화 후부터 물 줄이기', '과실 품질에 나쁜 영향 없음, 규산과 함께 쓰면 당 증가', '같은 연구', '초록 확인']
+      ].concat([CLICK_BORROWED]),
+      targets: [
+        { label: '70% 관수: 수량 −30~−36%', ratio: 0.7, days: 30, metric: 'yieldPct', lo: 62, hi: 72, source: 'Frontiers in Horticulture (2025)', check: true },
+        { label: '70% 관수: 당도 변화 작음 (−0.5~+0.5)', ratio: 0.7, days: 30, metric: 'brixDelta', lo: -0.5, hi: 0.5, source: '위 연구들 (결과가 엇갈림)', check: true }
+      ]
+    },
+    melon: {
+      name: '멜론', fruit: 'melon',
+      params: { baseBrix: 11, highBrix: 14, maxBrixRise: 3.1, yieldLinear: 0.4 },
+      note: '50% 관수에서 당도 +23%, 상품 수량 −30%(주로 과실 크기 감소)에 맞춤. 품종에 따라 수량 감소가 −24~43%로 다름.',
+      evidence: [
+        ['일반 당도', '11 Brix로 둠', '-', '가정'],
+        ['고당도 기준', '14 Brix로 둠', '-', '가정'],
+        ['50% ETc 관수 시 당도', 'Mission 품종 +23%', 'Agricultural Water Management (2014), 미국 텍사스 2년 시험', '초록 확인'],
+        ['50% ETc 관수 시 상품 수량', '−30% (주로 과실 크기 감소)', '같은 연구', '초록 확인'],
+        ['품종 차이', 'Mission −24%, Da Vinci −30%, Super Nectar −33~43%', '같은 연구', '초록 확인'],
+        ['물 절약', 'Mission·Da Vinci 37~45% 절약', '같은 연구', '초록 확인']
+      ].concat([CLICK_BORROWED]),
+      targets: [
+        { label: '50% 관수: 당도 +23% (= 약 +2.5 Brix)', ratio: 0.5, days: 30, metric: 'brixDelta', lo: 2.0, hi: 3.0, source: 'Agric. Water Manag. (2014) 초록', check: true },
+        { label: '50% 관수: 상품 수량 −24~−43%', ratio: 0.5, days: 30, metric: 'yieldPct', lo: 57, hi: 76, source: '같은 연구', check: true }
+      ]
+    },
+    citrus: {
+      name: '감귤 (타이벡 피복)', fruit: 'citrus',
+      params: { baseBrix: 10, highBrix: 11, maxBrixRise: 3.8, yieldLinear: 0.23, sustainMinDays: 25, stressAccum: 0.25 },
+      note: '타이벡으로 빗물을 막아 물을 줄이는 실제 재배법. 피복 후 30~60일 지나야 스트레스가 시작돼 재배 기간을 60일로 늘려 보세요. 관수 50%를 "피복"으로 봄.',
+      evidence: [
+        ['노지감귤 평균 당도', '9.8~10.5 °Bx', '제주농업기술원, 토양피복재배 실천기술 교육 (2019)', '원문 확인'],
+        ['타이벡 피복재배 효과', '당도 2.6~3.0 °Bx 향상', '같은 자료 (감귤연구소 결과 인용)', '원문 확인'],
+        ['스트레스가 시작되는 시점', '피복 후 30~60여 일 지나서부터', '같은 자료', '원문 확인'],
+        ['물이 고인 나무', '당도 9.9 °Bx (정상 11.7), 산함량 0.94% (정상 1.13%)', '같은 자료 (’08년 애월 조사)', '원문 확인'],
+        ['수확 전 관리 기준', '11 °Bx 이하면 관수하지 않음, 한 번에 많이 주면 당도 하락', '같은 자료', '원문 확인'],
+        ['고당도 등급', '11 °Brix 이상, 산도 1% 이하', '시판 감귤 품질 비교 (KCI)', '초록 확인'],
+        ['과실 크기', '피복 과원은 작은 과실이 되지 않도록 적과 필수 (수치 없음)', '같은 자료', '원문 확인'],
+        ['수량 감소 폭', '수치 자료 없음 → 10%로 둠', '-', '가정']
+      ].concat([CLICK_BORROWED]),
+      targets: [
+        { label: '피복(50%) 60일: 당도 +2.6~3.0 Brix', ratio: 0.5, days: 60, metric: 'brixDelta', lo: 2.6, hi: 3.0, source: '제주농업기술원 (원문 확인)', check: true },
+        { label: '피복(50%) 30일: 당도가 거의 안 오름 (30~60일 지연)', ratio: 0.5, days: 30, metric: 'brixDelta', lo: 0, hi: 1.0, source: '같은 자료', check: true }
+      ]
+    },
+    pepper: {
+      name: '파프리카', fruit: 'pepper',
+      params: { baseBrix: 7, highBrix: 8, maxBrixRise: 0.8, yieldLinear: 0.036 },
+      note: '20% 정도 줄여도 수량이 거의 줄지 않는다는 연구가 있음. 당도 상승은 작게 잡음.',
+      evidence: [
+        ['일반 당도', '7 Brix로 둠', '-', '가정'],
+        ['고당도 기준', '8 Brix로 둠', '-', '가정'],
+        ['80% ETc 관수 (영양생장기·과실기)', '총수량이 오히려 증가, 물 10% 절약, 품질 향상', 'ISHS Acta Hortic. 1034 (bell pepper, 2010~2011 온실)', '초록 확인'],
+        ['짠물(EC 3.4) 관수', '수량 −35%, 대신 당도·당·비타민C 증가', '같은 연구', '초록 확인'],
+        ['생육 단계', '꽃 피는 시기가 물 부족에 가장 약함', '같은 연구', '초록 확인'],
+        ['권장', '근권 수분을 보며 20% 감량', '파프리카 관수 연구 (검색 요약)', '검색 요약']
+      ].concat([CLICK_BORROWED]),
+      targets: [
+        { label: '80% 관수: 수량 거의 그대로 (−3% 이내)', ratio: 0.8, days: 30, metric: 'yieldPct', lo: 97, hi: 101, source: 'ISHS 1034 (검색 요약)', check: true },
+        { label: '80% 관수: 당도 소폭 증가 (0~+0.6)', ratio: 0.8, days: 30, metric: 'brixDelta', lo: 0.05, hi: 0.6, source: '같은 연구', check: true }
+      ]
+    }
+  };
+
+  // 작물 목표 검증 (화면 검증표와 test.js에서 사용)
+  function verifyCrop(key, seed) {
+    var c = CROPS[key];
+    return c.targets.map(function (tg) {
+      var r = run({ crop: key, mode: 'fixed', ratio: tg.ratio, days: tg.days, weather: 'normal', seed: seed == null ? 42 : seed });
+      var v = r.summary[tg.metric];
+      return { target: tg, value: v, ok: v >= tg.lo && v <= tg.hi };
+    });
+  }
+
   // 관수 비율별 최종 당도 (관계 그래프용). 같은 조건에서 고정 감량만 바꿔 계산.
   function brixCurve(opts, ratios) {
     return ratios.map(function (r) {
@@ -295,7 +444,8 @@
   }
 
   return {
-    DEFAULTS: DEFAULTS, LIMITS: LIMITS, mergeParams: mergeParams, PARAM_META: PARAM_META, EVIDENCE: EVIDENCE,
+    DEFAULTS: DEFAULTS, LIMITS: LIMITS, mergeParams: mergeParams, PARAM_META: PARAM_META, EVIDENCE: CROPS.tomato.evidence,
+    CROPS: CROPS, verifyCrop: verifyCrop,
     simulate: simulate, summarize: summarize, run: run, compareAll: compareAll, brixCurve: brixCurve,
     makeRng: makeRng
   };

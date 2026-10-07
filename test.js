@@ -95,6 +95,20 @@ var finiteAll = true;
 });
 check('모든 결과가 유한한 숫자', finiteAll);
 
+// 11. 작물별: 문헌 목표 범위 안에 드는지
+console.log('11. 작물별 문헌 목표 (check 표시된 것만 검사)');
+Object.keys(M.CROPS).forEach(function (k) {
+  M.verifyCrop(k).forEach(function (v) {
+    if (v.target.check) check(M.CROPS[k].name + ': ' + v.target.label, v.ok, '모델 ' + f(v.value));
+    else console.log('  참고  ' + M.CROPS[k].name + ': ' + v.target.label + '  (모델 ' + f(v.value) + (v.ok ? ', 범위 안' : ', 범위 밖') + ')');
+  });
+});
+['cherry', 'strawberry', 'melon', 'citrus', 'pepper', 'tomatoPaper'].forEach(function (k) {
+  var cv = M.brixCurve({ crop: k, days: 60, weather: 'normal', seed: 42 }, rs);
+  var ok = cv.every(function (pt, i) { return i === 0 || pt.brix <= cv[i - 1].brix + 1e-9; });
+  check(M.CROPS[k].name + ': 관수↓ → 당도↑ (단조)', ok);
+});
+
 // 10. index.html 안의 계산 로직이 model.js와 같은지
 console.log('10. index.html 안의 계산 로직이 model.js와 같음');
 var fs = require('fs'), path = require('path');

@@ -57,6 +57,11 @@
   .btn:hover { background: var(--soft); }
   .btn.primary { background: var(--green); color: #fff; border-color: var(--green); }
   .btn.primary:hover { background: #125c3c; }
+  .cropsel { width: 100%; font-size: 17px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); font-weight: bold; }
+  .lv { display: inline-block; font-size: 12px; font-weight: bold; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+  .lv.orig { background: #DDF0E4; color: #17704A; } .lv.abs { background: #E3ECF8; color: #2F6DB5; }
+  .lv.sum { background: #FFF1D6; color: #8A5A00; } .lv.asm { background: #EEE; color: #5F6B65; }
+  td.ok { color: var(--green); font-weight: bold; } td.ng { color: var(--red); font-weight: bold; }
   .toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: bold; color: var(--ink); font-size: 17px; }
   .toggle input { width: 18px; height: 18px; accent-color: var(--green); margin: 0; }
 
@@ -184,6 +189,12 @@
 <main>
   <!-- 1. 조작 패널 -->
   <section class="panel" id="controls">
+    <div>
+      <div class="lbl">작물</div>
+      <select id="crop" class="cropsel"></select>
+      <div class="note" id="cropNote"></div>
+    </div>
+
     <fieldset id="modeSet">
       <legend>관수 방식</legend>
       <label class="radio"><input type="radio" name="mode" value="full"> ① 충분히 관수 <small>(100% 고정)</small></label>
@@ -301,7 +312,7 @@
         <!-- 물방울 아이콘 줄 -->
         <g id="dropIcons"></g>
         <text id="dropLabel" x="40" y="570" font-size="19" fill="#1E4F8A" font-weight="bold"></text>
-        <text x="770" y="570" text-anchor="end" font-size="14" fill="#56625C">시설 과채 (특정 작물 아님)</text>
+        <text id="cropLabel" x="770" y="570" text-anchor="end" font-size="17" font-weight="bold" fill="#3E4B46"></text>
 
         <!-- 날씨 표시 -->
         <g id="thermo" transform="translate(24 -110)">
@@ -364,8 +375,14 @@
       <button class="btn" id="resetParams">기본값으로</button>
       <button class="btn close" data-close="assumeModal">✕ 닫기</button>
     </div>
-    <h3 style="margin:6px 0;color:var(--ink)">근거로 맞춘 기준값</h3>
+    <h3 style="margin:6px 0;color:var(--ink)">근거로 맞춘 기준값 · <span id="evCrop"></span></h3>
+    <p class="note" id="evNote" style="margin:0 0 6px"></p>
     <table id="evTable"></table>
+    <p class="note" style="margin:6px 0 0"><span class="lv orig">원문 확인</span> 논문·자료 PDF에서 수치를 직접 확인 ·
+      <span class="lv abs">초록 확인</span> 논문 초록에서 확인 · <span class="lv sum">검색 요약</span> 검색 결과 요약으로만 확인 · <span class="lv asm">가정</span> 근거 없이 정한 값</p>
+    <h3 style="margin:14px 0 4px;color:var(--ink)">작물별 검증: 문헌 목표와 모델 결과</h3>
+    <p class="note" style="margin:0 0 6px">같은 시드로 고정 감량을 계산한 값입니다. "참고" 줄은 검사하지 않고 차이만 보여 줍니다.</p>
+    <table id="vfTable"></table>
     <h3 style="margin:14px 0 4px;color:var(--ink)">계산 규칙 (하루 단위)</h3>
     <ol style="margin:0;padding-left:20px;font-size:14px">
       <li>부족분 d = max(0, 1 − 관수비율). 폭염이면 d × 가중치 + 기본 부족분.</li>
@@ -467,16 +484,7 @@
     alarmRecoverDays: ['경보 후 100% 유지 (일)', '가정']
   };
 
-  var EVIDENCE = [
-    ['일반 당도', '약 5 Brix (일반 범위 3~7)', '이소셜타임즈, 전남농업기술원(2004)'],
-    ['고당도 기준', '8 Brix 이상', '이소셜타임즈 (대저 짭짤이 기준)'],
-    ['관수 제한 시 수량', '−12~13% (방울형), 최대 −24% (대과형)', 'Alomari-Mheidat et al., Plants (2024)'],
-    ['관수 제한 시 과실 무게', '평균 −7~15%', 'Plants (2024)'],
-    ['당도가 오르는 조건', '스트레스가 "지속"될 때만 상승', 'Plants (2024)'],
-    ['정상 식물 클릭', '시간당 1회 미만', 'Khait et al., Cell (2023)'],
-    ['건조 식물 클릭', '평균 시간당 35.4회', 'Cell (2023), KISTI 과학향기'],
-    ['단수 후 클릭 변화', '4~5일째 최고점 후 감소', 'Cell (2023), Science News Explores']
-  ];
+  var EVIDENCE; // 아래 CROPS.tomato.evidence (하위 호환)
 
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 
@@ -506,9 +514,12 @@
     alarmRecoverDays: [0, 30]
   };
 
-  function mergeParams(over) {
+  // 기본값 ← 작물 설정 ← 화면에서 고친 값 순서로 덮어씀
+  function mergeParams(over, crop) {
     var p = {};
     for (var k in DEFAULTS) p[k] = DEFAULTS[k];
+    var cp = crop && CROPS[crop] ? CROPS[crop].params : null;
+    if (cp) for (var c in cp) p[c] = cp[c];
     if (over) for (var j in over) {
       var v = +over[j];
       if (j in DEFAULTS && over[j] !== '' && over[j] !== null && isFinite(v)) p[j] = LIMITS[j] ? clamp(v, LIMITS[j][0], LIMITS[j][1]) : v;
@@ -549,12 +560,14 @@
    *   weather: 'normal' | 'heat',
    *   days: 재배 기간 (일),
    *   seed: 난수 시드,
+   *   crop: 작물 키 (CROPS, 기본 'tomato'),
    *   params: DEFAULTS 덮어쓰기
    * }
    */
   function simulate(opts) {
     opts = opts || {};
-    var P = mergeParams(opts.params);
+    var crop = opts.crop && CROPS[opts.crop] ? opts.crop : 'tomato';
+    var P = mergeParams(opts.params, crop);
     var mode = opts.mode || 'full';
     var days = Math.min(365, Math.max(1, Math.round(+opts.days || 30)));
     var heat = opts.weather === 'heat';
@@ -564,7 +577,7 @@
 
     var zone = newZone(), ctrl = newZone();
     var out = {
-      days: days, mode: mode, weather: heat ? 'heat' : 'normal', params: P,
+      days: days, mode: mode, crop: crop, weather: heat ? 'heat' : 'normal', params: P,
       ratio: [], clicks: [], ctrlClicks: [], S: [], brix: [], phase: [], alarm: [],
       yieldRatio: [], water: [], alarms: 0
     };
@@ -651,6 +664,159 @@
     return { res: res, base: base, summary: summarize(res, base) };
   }
 
+  /*
+   * 작물별 설정. params는 DEFAULTS를 덮어씁니다.
+   * evidence: [항목, 값, 출처, 확인 수준]
+   *   확인 수준 - '원문 확인': 논문·자료 원문(PDF)에서 수치를 직접 확인
+   *               '초록 확인': 논문 초록에서 확인 (본문은 못 봄)
+   *               '검색 요약': 검색 결과 요약으로만 확인
+   *               '가정': 근거 없이 정한 값
+   * targets: 문헌 목표와 모델 결과 비교 (check: true면 test.js가 검사)
+   *   metric 'brixDelta' = 100% 관수 대비 당도 증가 (Brix), 'yieldPct' = 100% 대비 수량 (%)
+   */
+  var CLICK_EVIDENCE = [
+    ['정상 식물 클릭', '대조군 모두 시간당 1회 미만', 'Khait et al., Cell 186:1328 (2023)', '원문 확인'],
+    ['건조 식물 클릭', '토마토 35.4±6.1회/시간, 담배 11.0±1.4회/시간', 'Khait et al., Cell (2023)', '원문 확인'],
+    ['단수 후 클릭 변화', '물을 준 뒤 4~5일간 늘다가 마르면서 감소', 'Khait et al., Cell (2023)', '원문 확인']
+  ];
+  var CLICK_BORROWED = ['이 작물의 클릭 소리', '측정 자료 없음 → 토마토 값 그대로 사용', 'Cell (2023)은 토마토·담배를 측정, 밀·옥수수·포도·선인장은 녹음만 성공', '가정'];
+
+  var CROPS = {
+    tomato: {
+      name: '토마토 (기본)', fruit: 'tomato', params: {},
+      note: '발표 기본 모델. 프롬프트 기준(70%: 당도 +1.5 이상, 수량 −8~16%)에 맞춤. 원문과 비교하면 수량을 더 크게 깎는 쪽(보수적)입니다.',
+      evidence: [
+        ['일반 당도', '약 5 Brix (일반 범위 3~7)', '이소셜타임즈, 전남농업기술원(2004)', '검색 요약'],
+        ['고당도 기준', '8 Brix 이상만 "대저 짭짤이"', '이소셜타임즈 (대저 짭짤이)', '검색 요약'],
+        ['수량 (물 47%·13% 공급, 방울형)', '−12%, −13% (통계적으로 유의하지 않음)', 'Alomari-Mheidat et al., Plants 13:128 (2024)', '원문 확인'],
+        ['수량 (물 15% 공급, 대과 Marmande)', '−24% (유의하지 않음)', 'Plants (2024)', '원문 확인'],
+        ['과실 무게', '평균 −7%, −15% (방울형), −14% (대과형)', 'Plants (2024)', '원문 확인'],
+        ['당도가 오르는 조건', '스트레스가 "지속"될 때만 증가', 'Plants (2024) 초록', '원문 확인'],
+        ['가공용 토마토 메타분석', '물 부족 관수: 수량 감소(평균 −18.6 t/ha), 당도·비타민C 증가 (25편, 561처리)', 'Agricultural Water Management 222:301 (2019)', '초록 확인'],
+        ['당도 증가 폭', '부분근권건조 +26%, 방울토마토 +12~16%', '토마토 관수 연구들 (검색 요약)', '검색 요약']
+      ].concat(CLICK_EVIDENCE),
+      targets: [
+        { label: '70% 관수: 당도 +1.5 이상', ratio: 0.7, days: 30, metric: 'brixDelta', lo: 1.5, hi: 99, source: '프롬프트 기준', check: true },
+        { label: '70% 관수: 수량 −8~−16%', ratio: 0.7, days: 30, metric: 'yieldPct', lo: 84, hi: 92, source: '프롬프트 기준 (논문 원문은 물 47%에서 −12%)', check: true },
+        { label: '참고: 당도 +12~26% (= +0.6~1.3 Brix)', ratio: 0.7, days: 30, metric: 'brixDelta', lo: 0.6, hi: 1.3, source: '토마토 관수 연구 (검색 요약)', check: false },
+        { label: '참고: 물 47%에서 수량 −12% (유의하지 않음)', ratio: 0.47, days: 30, metric: 'yieldPct', lo: 85, hi: 95, source: 'Plants (2024) 원문', check: false }
+      ]
+    },
+    tomatoPaper: {
+      name: '토마토 (논문 기준)', fruit: 'tomato',
+      params: { maxBrixRise: 1.22, yieldLinear: 0.193, yieldQuad: 0 },
+      note: 'Plants (2024) 원문에 맞춘 설정: 물 47%에서 수량 −12%, 당도 +1.0 정도. 기본 설정보다 물을 줄여도 손해가 작고 당도도 덜 오릅니다.',
+      evidence: [
+        ['수량 (물 47% 공급, 방울형 2020)', '−12% (통계적으로 유의하지 않음)', 'Alomari-Mheidat et al., Plants 13:128 (2024)', '원문 확인'],
+        ['과실 무게', '평균 −7~15%', 'Plants (2024)', '원문 확인'],
+        ['당도', '스트레스가 지속될 때만 증가 (그래프로만 제시, 증가 폭 수치 없음)', 'Plants (2024)', '원문 확인'],
+        ['당도 증가 폭', '+12~26% (방울토마토·부분근권건조 연구)', '토마토 관수 연구들', '검색 요약'],
+        ['강한 스트레스의 추가 손해', '근거 부족 → 제곱항 없앰', '-', '가정']
+      ].concat(CLICK_EVIDENCE),
+      targets: [
+        { label: '물 47%: 수량 −5~−15% (논문 −12%)', ratio: 0.47, days: 30, metric: 'yieldPct', lo: 85, hi: 95, source: 'Plants (2024) 원문', check: true },
+        { label: '물 47%: 당도 +0.6~1.3 Brix (+12~26%)', ratio: 0.47, days: 30, metric: 'brixDelta', lo: 0.6, hi: 1.3, source: '토마토 관수 연구 (검색 요약)', check: true }
+      ]
+    },
+    cherry: {
+      name: '방울토마토', fruit: 'cherry',
+      params: { baseBrix: 7, highBrix: 9, maxBrixRise: 1.7, yieldLinear: 0.255 },
+      note: '당도 증가 +12~16%, 가을 작기 수량 감소 5~20%에 맞춤.',
+      evidence: [
+        ['일반 당도', '7 Brix로 둠', '-', '가정'],
+        ['고당도 기준', '9 Brix로 둠', '-', '가정'],
+        ['물 부족 관수 시 당도', '+15.73% (두 품종 모두)', 'Agriculture 11:669 (2021), 잎 수분퍼텐셜 기반 관수', '검색 요약'],
+        ['물 부족 관수 시 당도', '+12.44%', '방울토마토 Summerbrix·Lazarino 연구', '검색 요약'],
+        ['수량 (Summerbrix·Lazarino)', '가을 작기는 뚜렷한 차이 없음, 봄 작기는 감소 (물 85% 절약)', 'Agricultural Water Management, 방울토마토 RDI', '초록 확인'],
+        ['수량 감소 폭', '가을 작기 −5~20%, 봄 작기 −60~62%', '같은 연구', '검색 요약']
+      ].concat(CLICK_EVIDENCE),
+      targets: [
+        { label: '70% 관수: 당도 +12~16% (= +0.8~1.1 Brix)', ratio: 0.7, days: 30, metric: 'brixDelta', lo: 0.8, hi: 1.15, source: 'Agriculture (2021) 외', check: true },
+        { label: '70% 관수: 수량 −5~−20%', ratio: 0.7, days: 30, metric: 'yieldPct', lo: 80, hi: 95, source: 'Summerbrix·Lazarino 가을 작기', check: true }
+      ]
+    },
+    strawberry: {
+      name: '딸기', fruit: 'strawberry',
+      params: { baseBrix: 9, highBrix: 11, maxBrixRise: 0.4, yieldLinear: 0.84 },
+      note: '수량은 크게 줄고, 당도는 연구에 따라 증가·변화 없음·감소가 모두 보고됨. 당도 상승을 아주 작게 잡음. 물을 줄여 얻는 것이 적은 작물.',
+      evidence: [
+        ['일반 당도', '9 Brix로 둠', '-', '가정'],
+        ['고당도 기준', '11 Brix로 둠', '-', '가정'],
+        ['Malling Ace (사철 딸기, 10개월)', '상품 수량 −30~36%, 당도 변화 없음', 'Frontiers in Horticulture (2025), NIAB', '검색 요약'],
+        ['San Andreas (관수 100·80·60%)', '물을 줄일수록 수량·과중 감소, 당도·경도·산 증가', 'Applied Fruit Science (2025)', '초록 확인'],
+        ['정식 직후부터 물 줄이기', '환원당 −25.1%, 과중 −12.6% (당이 오히려 감소)', 'Hortic. Environ. Biotechnol. (2023)', '초록 확인'],
+        ['개화 후부터 물 줄이기', '과실 품질에 나쁜 영향 없음, 규산과 함께 쓰면 당 증가', '같은 연구', '초록 확인']
+      ].concat([CLICK_BORROWED]),
+      targets: [
+        { label: '70% 관수: 수량 −30~−36%', ratio: 0.7, days: 30, metric: 'yieldPct', lo: 62, hi: 72, source: 'Frontiers in Horticulture (2025)', check: true },
+        { label: '70% 관수: 당도 변화 작음 (−0.5~+0.5)', ratio: 0.7, days: 30, metric: 'brixDelta', lo: -0.5, hi: 0.5, source: '위 연구들 (결과가 엇갈림)', check: true }
+      ]
+    },
+    melon: {
+      name: '멜론', fruit: 'melon',
+      params: { baseBrix: 11, highBrix: 14, maxBrixRise: 3.1, yieldLinear: 0.4 },
+      note: '50% 관수에서 당도 +23%, 상품 수량 −30%(주로 과실 크기 감소)에 맞춤. 품종에 따라 수량 감소가 −24~43%로 다름.',
+      evidence: [
+        ['일반 당도', '11 Brix로 둠', '-', '가정'],
+        ['고당도 기준', '14 Brix로 둠', '-', '가정'],
+        ['50% ETc 관수 시 당도', 'Mission 품종 +23%', 'Agricultural Water Management (2014), 미국 텍사스 2년 시험', '초록 확인'],
+        ['50% ETc 관수 시 상품 수량', '−30% (주로 과실 크기 감소)', '같은 연구', '초록 확인'],
+        ['품종 차이', 'Mission −24%, Da Vinci −30%, Super Nectar −33~43%', '같은 연구', '초록 확인'],
+        ['물 절약', 'Mission·Da Vinci 37~45% 절약', '같은 연구', '초록 확인']
+      ].concat([CLICK_BORROWED]),
+      targets: [
+        { label: '50% 관수: 당도 +23% (= 약 +2.5 Brix)', ratio: 0.5, days: 30, metric: 'brixDelta', lo: 2.0, hi: 3.0, source: 'Agric. Water Manag. (2014) 초록', check: true },
+        { label: '50% 관수: 상품 수량 −24~−43%', ratio: 0.5, days: 30, metric: 'yieldPct', lo: 57, hi: 76, source: '같은 연구', check: true }
+      ]
+    },
+    citrus: {
+      name: '감귤 (타이벡 피복)', fruit: 'citrus',
+      params: { baseBrix: 10, highBrix: 11, maxBrixRise: 3.8, yieldLinear: 0.23, sustainMinDays: 25, stressAccum: 0.25 },
+      note: '타이벡으로 빗물을 막아 물을 줄이는 실제 재배법. 피복 후 30~60일 지나야 스트레스가 시작돼 재배 기간을 60일로 늘려 보세요. 관수 50%를 "피복"으로 봄.',
+      evidence: [
+        ['노지감귤 평균 당도', '9.8~10.5 °Bx', '제주농업기술원, 토양피복재배 실천기술 교육 (2019)', '원문 확인'],
+        ['타이벡 피복재배 효과', '당도 2.6~3.0 °Bx 향상', '같은 자료 (감귤연구소 결과 인용)', '원문 확인'],
+        ['스트레스가 시작되는 시점', '피복 후 30~60여 일 지나서부터', '같은 자료', '원문 확인'],
+        ['물이 고인 나무', '당도 9.9 °Bx (정상 11.7), 산함량 0.94% (정상 1.13%)', '같은 자료 (’08년 애월 조사)', '원문 확인'],
+        ['수확 전 관리 기준', '11 °Bx 이하면 관수하지 않음, 한 번에 많이 주면 당도 하락', '같은 자료', '원문 확인'],
+        ['고당도 등급', '11 °Brix 이상, 산도 1% 이하', '시판 감귤 품질 비교 (KCI)', '초록 확인'],
+        ['과실 크기', '피복 과원은 작은 과실이 되지 않도록 적과 필수 (수치 없음)', '같은 자료', '원문 확인'],
+        ['수량 감소 폭', '수치 자료 없음 → 10%로 둠', '-', '가정']
+      ].concat([CLICK_BORROWED]),
+      targets: [
+        { label: '피복(50%) 60일: 당도 +2.6~3.0 Brix', ratio: 0.5, days: 60, metric: 'brixDelta', lo: 2.6, hi: 3.0, source: '제주농업기술원 (원문 확인)', check: true },
+        { label: '피복(50%) 30일: 당도가 거의 안 오름 (30~60일 지연)', ratio: 0.5, days: 30, metric: 'brixDelta', lo: 0, hi: 1.0, source: '같은 자료', check: true }
+      ]
+    },
+    pepper: {
+      name: '파프리카', fruit: 'pepper',
+      params: { baseBrix: 7, highBrix: 8, maxBrixRise: 0.8, yieldLinear: 0.036 },
+      note: '20% 정도 줄여도 수량이 거의 줄지 않는다는 연구가 있음. 당도 상승은 작게 잡음.',
+      evidence: [
+        ['일반 당도', '7 Brix로 둠', '-', '가정'],
+        ['고당도 기준', '8 Brix로 둠', '-', '가정'],
+        ['80% ETc 관수 (영양생장기·과실기)', '총수량이 오히려 증가, 물 10% 절약, 품질 향상', 'ISHS Acta Hortic. 1034 (bell pepper, 2010~2011 온실)', '초록 확인'],
+        ['짠물(EC 3.4) 관수', '수량 −35%, 대신 당도·당·비타민C 증가', '같은 연구', '초록 확인'],
+        ['생육 단계', '꽃 피는 시기가 물 부족에 가장 약함', '같은 연구', '초록 확인'],
+        ['권장', '근권 수분을 보며 20% 감량', '파프리카 관수 연구 (검색 요약)', '검색 요약']
+      ].concat([CLICK_BORROWED]),
+      targets: [
+        { label: '80% 관수: 수량 거의 그대로 (−3% 이내)', ratio: 0.8, days: 30, metric: 'yieldPct', lo: 97, hi: 101, source: 'ISHS 1034 (검색 요약)', check: true },
+        { label: '80% 관수: 당도 소폭 증가 (0~+0.6)', ratio: 0.8, days: 30, metric: 'brixDelta', lo: 0.05, hi: 0.6, source: '같은 연구', check: true }
+      ]
+    }
+  };
+
+  // 작물 목표 검증 (화면 검증표와 test.js에서 사용)
+  function verifyCrop(key, seed) {
+    var c = CROPS[key];
+    return c.targets.map(function (tg) {
+      var r = run({ crop: key, mode: 'fixed', ratio: tg.ratio, days: tg.days, weather: 'normal', seed: seed == null ? 42 : seed });
+      var v = r.summary[tg.metric];
+      return { target: tg, value: v, ok: v >= tg.lo && v <= tg.hi };
+    });
+  }
+
   // 관수 비율별 최종 당도 (관계 그래프용). 같은 조건에서 고정 감량만 바꿔 계산.
   function brixCurve(opts, ratios) {
     return ratios.map(function (r) {
@@ -680,7 +846,8 @@
   }
 
   return {
-    DEFAULTS: DEFAULTS, LIMITS: LIMITS, mergeParams: mergeParams, PARAM_META: PARAM_META, EVIDENCE: EVIDENCE,
+    DEFAULTS: DEFAULTS, LIMITS: LIMITS, mergeParams: mergeParams, PARAM_META: PARAM_META, EVIDENCE: CROPS.tomato.evidence,
+    CROPS: CROPS, verifyCrop: verifyCrop,
     simulate: simulate, summarize: summarize, run: run, compareAll: compareAll, brixCurve: brixCurve,
     makeRng: makeRng
   };
@@ -705,6 +872,7 @@
       weather: radioVal('weather'),
       days: +$('days').value,
       seed: +$('seed').value || 0,
+      crop: $('crop').value,
       params: state.params
     };
   }
@@ -792,12 +960,12 @@
   var REL_RATIOS = []; for (var rr = 40; rr <= 110; rr += 5) REL_RATIOS.push(rr / 100);
   var relCache = { key: '', curves: null };
   function relCurves() {
-    var o = opts(), key = JSON.stringify([o.days, o.seed, o.params]);
+    var o = opts(), key = JSON.stringify([o.crop, o.days, o.seed, o.params]);
     if (relCache.key !== key) {
       relCache.key = key;
       relCache.curves = {
-        normal: M.brixCurve({ days: o.days, weather: 'normal', seed: o.seed, params: o.params }, REL_RATIOS),
-        heat: M.brixCurve({ days: o.days, weather: 'heat', seed: o.seed, params: o.params }, REL_RATIOS)
+        normal: M.brixCurve({ crop: o.crop, days: o.days, weather: 'normal', seed: o.seed, params: o.params }, REL_RATIOS),
+        heat: M.brixCurve({ crop: o.crop, days: o.days, weather: 'heat', seed: o.seed, params: o.params }, REL_RATIOS)
       };
     }
     return relCache.curves;
@@ -808,12 +976,13 @@
     var res = state.sim.res, P = res.params, last = res.days - 1, cur = res.weather;
     var curves = relCurves();
     var L = 48, Rm = 16, T = 12, B = 44, pw = W - L - Rm, ph = H - T - B;
-    var ymin = 4, ymax = Math.max(10, Math.ceil(P.baseBrix + P.maxBrixRise + 0.5));
+    var ymin = Math.floor(P.baseBrix - 1), ymax = Math.max(ymin + 5, Math.ceil(P.baseBrix + P.maxBrixRise + 0.5), Math.ceil(P.highBrix + 1));
     var X = function (r) { return L + (r - 0.4) / 0.7 * pw; };
     var Y = function (v) { return T + ph - (v - ymin) / (ymax - ymin) * ph; };
     var F = '"Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
     g.font = '13px ' + F; g.lineWidth = 1;
-    [4, 5, 6, 7, 8, 9, 10].filter(function (v) { return v <= ymax; }).forEach(function (v) {
+    var yst = ymax - ymin > 8 ? 2 : 1, yt = []; for (var yv = ymin; yv <= ymax; yv += yst) yt.push(yv);
+    yt.forEach(function (v) {
       g.strokeStyle = '#ECEFE8'; g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(W - Rm, Y(v)); g.stroke();
       g.fillStyle = C.gray; g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillText(v, L - 6, Y(v));
     });
@@ -864,8 +1033,8 @@
     lineChart($('cClick'), { days: n, upto: t, ymin: 0, ymax: cmax, yticks: ticks(cmax, 4),
       refs: [{ v: P.brakeLine, label: '브레이크 ' + P.brakeLine, color: C.blue }, { v: P.alarmLine, label: '경보 ' + P.alarmLine, color: C.red }],
       series: ser, marks: marks });
-    var bmax = Math.max(10, Math.ceil(P.baseBrix + P.maxBrixRise + 0.5));
-    lineChart($('cBrix'), { days: n, upto: t, ymin: 3, ymax: bmax, yticks: [5, 8, bmax],
+    var bmin = Math.floor(P.baseBrix - 2), bmax = Math.max(bmin + 5, Math.ceil(P.baseBrix + P.maxBrixRise + 0.5), Math.ceil(P.highBrix + 1));
+    lineChart($('cBrix'), { days: n, upto: t, ymin: bmin, ymax: bmax, yticks: [P.baseBrix, P.highBrix, bmax],
       refs: [{ v: P.highBrix, label: '고당도 ' + P.highBrix, color: C.green }, { v: P.baseBrix, label: '일반 ' + P.baseBrix, color: C.gray }],
       series: [{ data: res.brix, color: C.green }] });
     $('ratioLegend').textContent = res.mode === 'brake' ? '클릭 그래프 회색 점선: 대조 구역(100%)' : '';
@@ -873,7 +1042,17 @@
 
   // ── 온실 그림 (실사풍 SVG) ──
   var PLANT_X = [190, 400, 610], PLANT_DIR = [-1, 1, 1], PLANT_SWAY = [-6, 4, -3];
-  var FRUIT_HUE = [4, 24, 46]; // 빨강·주황·노랑
+  var FRUIT_HUE = [4, 24, 46]; // 빨강·주황·노랑 (작물에 따라 바뀜)
+  // 작물별 열매: 색(hue)·채도·크기·과방당 개수·모양
+  var FRUIT_KIND = {
+    tomato: { hues: [4, 24, 46], sat: 88, scale: 1, n: [4, 4, 3], shape: 'round' },
+    cherry: { hues: [2, 18, 44], sat: 90, scale: 0.6, n: [6, 6, 5], shape: 'round' },
+    strawberry: { hues: [356, 352, 358], sat: 85, scale: 0.95, n: [3, 3, 2], shape: 'berry' },
+    melon: { hues: [62, 55, 68], sat: 45, scale: 2.2, n: [1, 1, 0], shape: 'melon' },
+    citrus: { hues: [30, 26, 33], sat: 95, scale: 1.15, n: [2, 3, 2], shape: 'citrus' },
+    pepper: { hues: [2, 48, 26], sat: 90, scale: 1.35, n: [1, 1, 1], shape: 'pepper' }
+  };
+  var fruitKind = FRUIT_KIND.tomato;
   function n1(v) { return Math.round(v * 10) / 10; }
   function hsl(h, s, l) { return 'hsl(' + n1(h) + ',' + n1(s) + '%,' + n1(Math.max(0, Math.min(100, l))) + '%)'; }
 
@@ -915,12 +1094,38 @@
   }
 
   function fruit(cx, cy, r, hue) {
-    var s = '<circle cx="' + n1(cx) + '" cy="' + n1(cy) + '" r="' + n1(r) + '" fill="url(#fr' + hue + ')" stroke="rgba(60,20,10,.25)" stroke-width=".8"/>';
+    var shape = fruitKind.shape, fill = 'url(#fr' + hue + ')', s;
+    if (shape === 'berry') { // 딸기: 아래로 뾰족한 모양 + 씨
+      s = '<path d="M' + n1(cx - r) + ' ' + n1(cy - r * 0.6) + ' Q' + n1(cx) + ' ' + n1(cy - r * 1.1) + ' ' + n1(cx + r) + ' ' + n1(cy - r * 0.6) +
+        ' Q' + n1(cx + r * 0.9) + ' ' + n1(cy + r * 0.6) + ' ' + n1(cx) + ' ' + n1(cy + r * 1.3) + ' Q' + n1(cx - r * 0.9) + ' ' + n1(cy + r * 0.6) + ' ' + n1(cx - r) + ' ' + n1(cy - r * 0.6) + 'Z" fill="' + fill + '" stroke="rgba(90,10,10,.3)"/>';
+      for (var q = 0; q < 9; q++) s += '<circle cx="' + n1(cx + ((q % 3) - 1) * r * 0.45) + '" cy="' + n1(cy - r * 0.3 + Math.floor(q / 3) * r * 0.45) + '" r="' + n1(r * 0.06) + '" fill="#F7E07A"/>';
+      return s + '<path d="M' + n1(cx - r * 0.8) + ' ' + n1(cy - r * 0.75) + ' L' + n1(cx) + ' ' + n1(cy - r * 0.5) + ' L' + n1(cx + r * 0.8) + ' ' + n1(cy - r * 0.75) + ' L' + n1(cx) + ' ' + n1(cy - r * 1.05) + 'Z" fill="#3F7A2E"/>';
+    }
+    if (shape === 'pepper') { // 파프리카: 각진 세 덩이
+      s = '<path d="M' + n1(cx - r * 0.85) + ' ' + n1(cy - r * 0.7) + ' Q' + n1(cx) + ' ' + n1(cy - r * 0.95) + ' ' + n1(cx + r * 0.85) + ' ' + n1(cy - r * 0.7) +
+        ' Q' + n1(cx + r * 1.05) + ' ' + n1(cy + r * 0.4) + ' ' + n1(cx + r * 0.55) + ' ' + n1(cy + r) + ' Q' + n1(cx + r * 0.25) + ' ' + n1(cy + r * 0.8) + ' ' + n1(cx) + ' ' + n1(cy + r * 1.05) +
+        ' Q' + n1(cx - r * 0.25) + ' ' + n1(cy + r * 0.8) + ' ' + n1(cx - r * 0.55) + ' ' + n1(cy + r) + ' Q' + n1(cx - r * 1.05) + ' ' + n1(cy + r * 0.4) + ' ' + n1(cx - r * 0.85) + ' ' + n1(cy - r * 0.7) + 'Z" fill="' + fill + '" stroke="rgba(60,20,10,.3)"/>';
+      s += '<path d="M' + n1(cx - r * 0.2) + ' ' + n1(cy - r * 0.6) + ' Q' + n1(cx - r * 0.35) + ' ' + n1(cy + r * 0.2) + ' ' + n1(cx - r * 0.25) + ' ' + n1(cy + r * 0.8) + '" stroke="rgba(0,0,0,.15)" stroke-width="2" fill="none"/>';
+      s += '<ellipse cx="' + n1(cx - r * 0.5) + '" cy="' + n1(cy - r * 0.2) + '" rx="' + n1(r * 0.12) + '" ry="' + n1(r * 0.35) + '" fill="#fff" opacity=".45"/>';
+      return s + '<path d="M' + n1(cx) + ' ' + n1(cy - r * 0.85) + ' l0 ' + n1(-r * 0.35) + '" stroke="#3F7A2E" stroke-width="4" stroke-linecap="round"/>';
+    }
+    s = '<circle cx="' + n1(cx) + '" cy="' + n1(cy) + '" r="' + n1(r) + '" fill="url(#fr' + hue + ')" stroke="rgba(60,20,10,.25)" stroke-width=".8"/>';
     s += '<ellipse cx="' + n1(cx - r * 0.35) + '" cy="' + n1(cy - r * 0.4) + '" rx="' + n1(r * 0.28) + '" ry="' + n1(r * 0.16) + '" fill="#fff" opacity=".55" transform="rotate(-30 ' + n1(cx - r * 0.35) + ' ' + n1(cy - r * 0.4) + ')"/>';
     var sep = '';
     for (var k = 0; k < 5; k++) {
       var a = (k * 72 - 90) * Math.PI / 180, ex = cx + Math.cos(a) * r * 0.45, ey = cy - r * 0.9 + Math.sin(a) * r * 0.28;
       sep += 'M' + n1(cx) + ' ' + n1(cy - r * 0.92) + ' L' + n1(ex) + ' ' + n1(ey) + ' ';
+    }
+    if (shape === 'melon') { // 멜론: 그물 무늬
+      var net = '';
+      for (var m = -3; m <= 3; m++) net += 'M' + n1(cx + m * r * 0.28 - r * 0.2) + ' ' + n1(cy - r) + ' Q' + n1(cx + m * r * 0.32) + ' ' + n1(cy) + ' ' + n1(cx + m * r * 0.28 + r * 0.2) + ' ' + n1(cy + r) + ' ';
+      for (var m2 = -2; m2 <= 2; m2++) net += 'M' + n1(cx - r) + ' ' + n1(cy + m2 * r * 0.35) + ' Q' + n1(cx) + ' ' + n1(cy + m2 * r * 0.42) + ' ' + n1(cx + r) + ' ' + n1(cy + m2 * r * 0.35) + ' ';
+      s += '<path d="' + net + '" stroke="#EDE6C8" stroke-width="1.3" fill="none" opacity=".75" clip-path="circle(' + n1(r) + 'px at ' + n1(cx) + 'px ' + n1(cy) + 'px)"/>';
+      return s + '<path d="M' + n1(cx) + ' ' + n1(cy - r) + ' l0 -8 l-8 -6" stroke="#4F8A36" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    }
+    if (shape === 'citrus') { // 감귤: 껍질 점 + 꼭지
+      for (var c2 = 0; c2 < 14; c2++) { var aa = c2 * 2.4, rr = r * (0.25 + (c2 % 4) * 0.17); s += '<circle cx="' + n1(cx + Math.cos(aa) * rr) + '" cy="' + n1(cy + Math.sin(aa) * rr) + '" r="' + n1(r * 0.04) + '" fill="rgba(140,60,0,.25)"/>'; }
+      return s + '<circle cx="' + n1(cx) + '" cy="' + n1(cy - r * 0.92) + '" r="' + n1(r * 0.12) + '" fill="#3F7A2E"/>';
     }
     return s + '<path d="' + sep + '" stroke="#3F7A2E" stroke-width="2.2" stroke-linecap="round"/>';
   }
@@ -939,10 +1144,11 @@
       leaves += '<g transform="translate(' + n1(pt[0]) + ' ' + n1(pt[1]) + ') rotate(' + n1(ang) + ')' + flip + '">' + compoundLeaf(L, S, u < 0.3) + '</g>';
       // 꽃송이(과방): 일부 마디의 반대쪽
       if (i === 1 || i === 3 || i === 5) {
-        var k = (i - 1) / 2, n = k === 2 ? 3 : 4, hue = (p + k) % 3;
-        var R = (17 - k * 1.5) * (1 - 0.3 * S), dx = -side * 26, ax = pt[0] + dx, ay = pt[1] + 18 + S * 8;
+        var k = (i - 1) / 2, n = fruitKind.n[k], hue = (p + k) % 3;
+        if (!n) return;
+        var R = (17 - k * 1.5) * (1 - 0.3 * S) * fruitKind.scale, dx = -side * (20 + R * 0.6), ax = pt[0] + dx, ay = pt[1] + 10 + R * 0.5 + S * 8;
         fruits += '<path d="M' + n1(pt[0]) + ' ' + n1(pt[1]) + ' Q' + n1(pt[0] + dx * 0.7) + ' ' + n1(pt[1] - 8) + ' ' + n1(ax) + ' ' + n1(ay - R) + '" stroke="#4F8A36" stroke-width="2.5" fill="none"/>';
-        var offs = [[0, 0], [-side * 1.15, 0.55], [-side * 0.15, 1.25], [-side * 1.3, 1.6]];
+        var offs = [[0, 0], [-side * 1.15, 0.55], [-side * 0.15, 1.25], [-side * 1.3, 1.6], [-side * 0.3, 2.3], [-side * 1.2, 2.8]];
         for (var f = n - 1; f >= 0; f--) fruits += fruit(ax + offs[f][0] * R, ay + offs[f][1] * R, R * (1 - f * 0.05), hue);
       }
     });
@@ -976,12 +1182,13 @@
     $('lg1').setAttribute('stop-color', hsl(116 - 42 * S, 55 - 15 * S, 26 + 8 * S));
     $('lo0').setAttribute('stop-color', hsl(84 - 30 * S, 48 - 8 * S, 50 + 6 * S));
     $('lo1').setAttribute('stop-color', hsl(96 - 30 * S, 45 - 10 * S, 30 + 6 * S));
-    var L = Math.max(34, Math.min(56, 54 - (v.brix - 5) * 4));
-    FRUIT_HUE.forEach(function (h, i) {
+    fruitKind = FRUIT_KIND[house.tgt.fruit] || FRUIT_KIND.tomato;
+    var L = Math.max(34, Math.min(56, 54 - (v.brix - house.tgt.base) * 4)), sat = fruitKind.sat;
+    fruitKind.hues.forEach(function (h, i) {
       var st = $('fr' + i).children;
-      st[0].setAttribute('stop-color', hsl(h + 6, 95, L + 22));
-      st[1].setAttribute('stop-color', hsl(h, 88, L));
-      st[2].setAttribute('stop-color', hsl(h - 4, 82, L - 20));
+      st[0].setAttribute('stop-color', hsl(h + 6, Math.min(100, sat + 7), L + 22));
+      st[1].setAttribute('stop-color', hsl(h, sat, L));
+      st[2].setAttribute('stop-color', hsl(h - 4, sat - 6, L - 20));
     });
     var s = '';
     for (var p = 0; p < 3; p++) s += plantSVG(p, S, v.brix);
@@ -1017,6 +1224,7 @@
     }
     $('dropIcons').innerHTML = ic;
     $('dropLabel').textContent = '물방울 ' + nd + '개 = 관수 ' + Math.round(t.ratio * 100) + '%';
+    $('cropLabel').textContent = '작물: ' + t.cropName + ' (모델 예시)';
     var heat = t.weather === 'heat';
     $('sky').setAttribute('fill', heat ? 'url(#skyH)' : 'url(#skyN)');
     $('sunCore').setAttribute('fill', heat ? 'url(#sunHG)' : 'url(#sunG)');
@@ -1080,7 +1288,8 @@
     $('rClick').textContent = res.clicks[t].toFixed(1);
     $('rS').innerHTML = res.S[t].toFixed(2) + ' <small>' + stressWord(res.S[t]) + '</small>';
     $('rBrix').textContent = res.brix[t].toFixed(1);
-    drawHouse({ S: res.S[t], ratio: res.ratio[t], clicks: res.clicks[t], brix: res.brix[t], alarm: res.alarm[t], weather: res.weather });
+    drawHouse({ S: res.S[t], ratio: res.ratio[t], clicks: res.clicks[t], brix: res.brix[t], alarm: res.alarm[t], weather: res.weather,
+      fruit: M.CROPS[res.crop].fruit, base: res.params.baseBrix, cropName: M.CROPS[res.crop].name });
     $('explain').innerHTML = explain(res, t);
     drawCharts();
 
@@ -1145,7 +1354,7 @@
   // ── 세 방식 비교 ──
   var cmpData = null;
   function condText(o) {
-    return '조건: ' + (o.weather === 'heat' ? '폭염' : '보통') + ' · ' + o.days + '일 · 시드 ' + o.seed;
+    return '조건: ' + M.CROPS[o.crop].name + ' · ' + (o.weather === 'heat' ? '폭염' : '보통') + ' · ' + o.days + '일 · 시드 ' + o.seed;
   }
   function openCompare() {
     stop();
@@ -1173,7 +1382,7 @@
     g.fillStyle = C.text; g.font = '24px ' + F; g.fillText(condText(data.o), 50, 88);
     var cols = [C.gray, C.blue, C.green];
     var metrics = [
-      { name: '당도 (Brix)', get: function (s) { return s.brix; }, f: function (v) { return v.toFixed(1); }, ref: data.o.params && data.o.params.highBrix || M.DEFAULTS.highBrix, refL: '고당도' },
+      { name: '당도 (Brix)', get: function (s) { return s.brix; }, f: function (v) { return v.toFixed(1); }, ref: data.groups[0].res.params.highBrix, refL: '고당도' },
       { name: '수량 (일반 대비 %)', get: function (s) { return s.yieldPct; }, f: function (v) { return v.toFixed(1) + '%'; } },
       { name: '물 사용량 (일반 대비 %)', get: function (s) { return s.waterPct; }, f: function (v) { return v.toFixed(0) + '%'; } }
     ];
@@ -1223,22 +1432,44 @@
   $('savePng').onclick = function () { download('세방식비교.png', $('cmpCanvas').toDataURL('image/png')); };
 
   // ── 모델 가정과 근거 ──
-  $('evTable').innerHTML = '<tr><th>항목</th><th>값</th><th>출처</th></tr>' + M.EVIDENCE.map(function (r) {
-    return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>';
-  }).join('');
+  var LV = { '원문 확인': 'orig', '초록 확인': 'abs', '검색 요약': 'sum', '가정': 'asm' };
+  function esc(x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function buildEvidence() {
+    var c = M.CROPS[$('crop').value];
+    $('evCrop').textContent = c.name; $('evNote').textContent = c.note;
+    $('evTable').innerHTML = '<tr><th>항목</th><th>값</th><th>출처</th><th>확인</th></tr>' + c.evidence.map(function (r) {
+      return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td><span class="lv ' + (LV[r[3]] || 'asm') + '">' + esc(r[3]) + '</span></td></tr>';
+    }).join('');
+  }
+  var vfDone = false;
+  function buildVerify() {
+    if (vfDone) return; vfDone = true;
+    var rows = '<tr><th>작물</th><th>문헌 목표</th><th>근거</th><th>모델</th><th>판정</th></tr>';
+    Object.keys(M.CROPS).forEach(function (k) {
+      M.verifyCrop(k).forEach(function (v) {
+        var unit = v.target.metric === 'yieldPct' ? '%' : ' Brix', val = v.target.metric === 'yieldPct' ? v.value.toFixed(1) + '%' : sign(v.value, 2) + ' Brix';
+        rows += '<tr><td>' + esc(M.CROPS[k].name) + '</td><td>' + esc(v.target.label) + '</td><td>' + esc(v.target.source) + '</td><td class="n">' + val + '</td>' +
+          (v.target.check ? '<td class="' + (v.ok ? 'ok">✔ 범위 안' : 'ng">✘ 범위 밖') + '</td>' : '<td>참고 · ' + (v.ok ? '범위 안' : '<b class="down">범위 밖</b>') + '</td>') + '</tr>';
+      });
+    });
+    $('vfTable').innerHTML = rows;
+  }
+  function baseVal(k) { return M.mergeParams({}, $('crop').value)[k]; }
   function buildParams() {
     var box = $('params'); box.innerHTML = '';
     Object.keys(M.DEFAULTS).forEach(function (k) {
-      var meta = M.PARAM_META[k] || [k, ''], assumed = /가정/.test(meta[1]);
+      var meta = (M.PARAM_META[k] || [k, '']).slice(), cp = M.CROPS[$('crop').value].params;
+      if (k in cp && $('crop').value !== 'tomato') meta[1] = M.CROPS[$('crop').value].name + ' 설정 (위 근거 표 참고)';
+      var assumed = /가정/.test(meta[1]);
       var lab = document.createElement('label');
       if (assumed) lab.className = 'assumed';
       lab.innerHTML = '<span>' + meta[0] + '<small>' + meta[1] + '</small></span>';
       var inp = document.createElement('input');
-      inp.type = 'number'; inp.step = 'any'; inp.value = k in state.params ? state.params[k] : M.DEFAULTS[k];
+      inp.type = 'number'; inp.step = 'any'; inp.value = k in state.params ? state.params[k] : baseVal(k);
       inp.classList.toggle('changed', k in state.params);
       inp.onchange = function () {
         var v = parseFloat(inp.value);
-        if (isNaN(v) || v === M.DEFAULTS[k]) { delete state.params[k]; inp.value = M.DEFAULTS[k]; }
+        if (isNaN(v) || v === baseVal(k)) { delete state.params[k]; inp.value = baseVal(k); }
         else { state.params[k] = M.mergeParams(state.params)[k] === v ? v : M.LIMITS[k] ? Math.min(M.LIMITS[k][1], Math.max(M.LIMITS[k][0], v)) : v; inp.value = state.params[k]; }
         inp.classList.toggle('changed', k in state.params);
         recompute(true);
@@ -1246,7 +1477,15 @@
       lab.appendChild(inp); box.appendChild(lab);
     });
   }
+  // 작물 선택
+  Object.keys(M.CROPS).forEach(function (k) {
+    var o = document.createElement('option'); o.value = k; o.textContent = M.CROPS[k].name; $('crop').appendChild(o);
+  });
+  function syncCrop() { $('cropNote').textContent = M.CROPS[$('crop').value].note; buildEvidence(); }
+  $('crop').onchange = function () { state.params = {}; syncCrop(); buildParams(); recompute(false); };
+  syncCrop();
   buildParams();
+  $('openAssume').addEventListener('click', buildVerify);
   $('resetParams').onclick = function () { state.params = {}; $('seed').value = 42; buildParams(); recompute(true); };
   $('openAssume').onclick = function () { $('assumeModal').classList.add('open'); };
   document.querySelectorAll('[data-close]').forEach(function (b) { b.onclick = function () { $(b.dataset.close).classList.remove('open'); }; });
