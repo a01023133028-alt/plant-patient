@@ -49,7 +49,11 @@
     brakeDelta: 4.0,        // 대조 구역보다 이만큼(회/시간) 늘면 "뚜렷한 증가" - 가정
     brakeLine: 5,           // 그래프 브레이크 기준선 (회/시간) - 발표 설계
     alarmLine: 15,          // 경보 기준 (회/시간) - 발표 설계
-    alarmRecoverDays: 3     // 경보 후 100% 유지 일수 - 가정
+    alarmRecoverDays: 3,    // 경보 후 100% 유지 일수 - 가정
+
+    // ── 소득 (10a 기준, 만 원) ──
+    baseRevenue: 4202,      // 10a 총수입 4,202만 원 - 농촌진흥청 2024 농산물소득조사 (토마토 수경), 프롬프트 제공 값
+    baseIncome: 2437        // 10a 소득 2,437만 원 - 같은 자료, 프롬프트 제공 값
   };
 
   // 화면 표시용 설명 (근거 표·가정값 편집 패널)
@@ -79,7 +83,9 @@
     brakeDelta: ['브레이크 판정: 대조 대비 증가 (회/시간)', '가정'],
     brakeLine: ['브레이크 기준선 (회/시간)', '발표 설계'],
     alarmLine: ['경보 기준 (회/시간)', '발표 설계'],
-    alarmRecoverDays: ['경보 후 100% 유지 (일)', '가정']
+    alarmRecoverDays: ['경보 후 100% 유지 (일)', '가정'],
+    baseRevenue: ['10a 총수입 (만 원)', '농촌진흥청 2024 (토마토 수경), 프롬프트 제공'],
+    baseIncome: ['10a 소득 (만 원)', '농촌진흥청 2024 (토마토 수경), 프롬프트 제공']
   };
 
   var EVIDENCE; // 아래 CROPS.tomato.evidence (하위 호환)
@@ -109,7 +115,7 @@
     yieldLinear: [0, 1], yieldQuadThreshold: [0, 1], yieldQuad: [0, 20], clickBase: [0, 10], clickMax: [0, 200],
     clickExp: [0.1, 5], severeS: [0.01, 1], fatigueOnsetDays: [0, 30], fatigueTau: [0.1, 100], clickNoise: [0, 1],
     brakeStep: [0.01, 0.5], brakeFloor: [0, 1], brakeDelta: [0, 1000], brakeLine: [0, 200], alarmLine: [0.1, 1000],
-    alarmRecoverDays: [0, 30]
+    alarmRecoverDays: [0, 30], baseRevenue: [1, 1e6], baseIncome: [-1e6, 1e6]
   };
 
   // 기본값 ← 작물 설정 ← 화면에서 고친 값 순서로 덮어씀
@@ -145,6 +151,13 @@
     return Math.max(0, mean * (1 + P.clickNoise * gauss(rng)));
   }
 
+  // 소득 = 기준 소득 + (총수입 − 기준 총수입). 경영비는 같다고 가정.
+  // 총수입 = 기준 총수입 × 수량비율 × (1 + 프리미엄 × h), h는 일반 당도 0 → 고당도 기준 1 (선형)
+  function incomeOf(yieldRatio, brix, premium, P) {
+    var h = clamp((brix - P.baseBrix) / (P.highBrix - P.baseBrix), 0, 1);
+    return P.baseIncome + (P.baseRevenue * yieldRatio * (1 + premium * h) - P.baseRevenue);
+  }
+
   function brixOf(x, P) { return P.baseBrix + P.maxBrixRise * (1 - Math.exp(-x / P.brixTau)); }
   function dailyYield(S, P) {
     var q = Math.max(0, S - P.yieldQuadThreshold);
@@ -159,12 +172,14 @@
    *   days: 재배 기간 (일),
    *   seed: 난수 시드,
    *   crop: 작물 키 (CROPS, 기본 'tomato'),
+   *   premium: 고당도 단가 프리미엄 (0~0.7, 기본 0.3),
    *   params: DEFAULTS 덮어쓰기
    * }
    */
   function simulate(opts) {
     opts = opts || {};
     var crop = opts.crop && CROPS[opts.crop] ? opts.crop : 'tomato';
+    var premium = isFinite(+opts.premium) && opts.premium !== '' && opts.premium != null ? clamp(+opts.premium, 0, 2) : 0.3;
     var P = mergeParams(opts.params, crop);
     var mode = opts.mode || 'full';
     var days = Math.min(365, Math.max(1, Math.round(+opts.days || 30)));
@@ -177,7 +192,7 @@
     var out = {
       days: days, mode: mode, crop: crop, weather: heat ? 'heat' : 'normal', params: P,
       ratio: [], clicks: [], ctrlClicks: [], S: [], brix: [], phase: [], alarm: [],
-      yieldRatio: [], water: [], alarms: 0
+      yieldRatio: [], water: [], income: [], alarms: 0
     };
 
     // 소리 브레이크 상태
@@ -232,6 +247,7 @@
       out.alarm.push(alarm);
       out.yieldRatio.push(yr);
       out.water.push(wSum / (t + 1));
+      out.income.push(incomeOf(yr, bx, premium, P));
     }
     return out;
   }
@@ -248,6 +264,8 @@
       brixDelta: res.brix[t] - base.brix[bt],
       yieldPct: 100 * res.yieldRatio[t] / base.yieldRatio[bt],
       waterPct: 100 * res.water[t] / base.water[bt],
+      income: res.income[t],
+      incomeDelta: res.income[t] - base.income[bt],
       meanClicks: sumC / (t + 1),
       alarms: res.alarm.slice(0, t + 1).filter(Boolean).length
     };
@@ -277,6 +295,7 @@
     ['건조 식물 클릭', '토마토 35.4±6.1회/시간, 담배 11.0±1.4회/시간', 'Khait et al., Cell (2023)', '원문 확인'],
     ['단수 후 클릭 변화', '물을 준 뒤 4~5일간 늘다가 마르면서 감소', 'Khait et al., Cell (2023)', '원문 확인']
   ];
+  var INCOME_BORROWED = ['10a 소득 · 총수입', '이 작물 자료 없음 → 토마토 값 사용 (✏ 작물 설정에서 바꾸세요)', '-', '가정'];
   var CLICK_BORROWED = ['이 작물의 클릭 소리', '측정 자료 없음 → 토마토 값 그대로 사용', 'Cell (2023)은 토마토·담배를 측정, 밀·옥수수·포도·선인장은 녹음만 성공', '가정'];
 
   var CROPS = {
@@ -289,6 +308,8 @@
         ['과실 무게', '평균 −7~15%', 'Plants (2024)', '원문 확인'],
         ['당도', '스트레스가 지속될 때만 증가 (그래프로만 제시, 증가 폭 수치 없음)', 'Plants (2024)', '원문 확인'],
         ['당도 증가 폭', '+12~26% (방울토마토·부분근권건조 연구)', '토마토 관수 연구들', '검색 요약'],
+        ['10a 소득 · 총수입', '2,437만 원 · 4,202만 원 (토마토 수경)', '농촌진흥청 2024 농산물소득조사 (프롬프트 제공, 원문 미확인)', '검색 요약'],
+        ['고당도 단가 프리미엄', '+67% 사례 (화면 슬라이더 기본 30%)', '농진청 2002년 고당도 사례 (프롬프트 제공, 원문 미확인)', '검색 요약'],
         ['강한 스트레스의 추가 손해', '근거 부족 → 제곱항 없앰', '-', '가정']
       ].concat(CLICK_EVIDENCE),
       targets: [
@@ -344,7 +365,7 @@
         ['San Andreas (관수 100·80·60%)', '물을 줄일수록 수량·과중 감소, 당도·경도·산 증가', 'Applied Fruit Science (2025)', '초록 확인'],
         ['정식 직후부터 물 줄이기', '환원당 −25.1%, 과중 −12.6% (당이 오히려 감소)', 'Hortic. Environ. Biotechnol. (2023)', '초록 확인'],
         ['개화 후부터 물 줄이기', '과실 품질에 나쁜 영향 없음, 규산과 함께 쓰면 당 증가', '같은 연구', '초록 확인']
-      ].concat([CLICK_BORROWED]),
+      ].concat([CLICK_BORROWED, INCOME_BORROWED]),
       targets: [
         { label: '70% 관수: 수량 −30~−36%', ratio: 0.7, days: 30, metric: 'yieldPct', lo: 62, hi: 72, source: 'Frontiers in Horticulture (2025)', check: true },
         { label: '70% 관수: 당도 변화 작음 (−0.5~+0.5)', ratio: 0.7, days: 30, metric: 'brixDelta', lo: -0.5, hi: 0.5, source: '위 연구들 (결과가 엇갈림)', check: true }
@@ -361,7 +382,7 @@
         ['50% ETc 관수 시 상품 수량', '−30% (주로 과실 크기 감소)', '같은 연구', '초록 확인'],
         ['품종 차이', 'Mission −24%, Da Vinci −30%, Super Nectar −33~43%', '같은 연구', '초록 확인'],
         ['물 절약', 'Mission·Da Vinci 37~45% 절약', '같은 연구', '초록 확인']
-      ].concat([CLICK_BORROWED]),
+      ].concat([CLICK_BORROWED, INCOME_BORROWED]),
       targets: [
         { label: '50% 관수: 당도 +23% (= 약 +2.5 Brix)', ratio: 0.5, days: 30, metric: 'brixDelta', lo: 2.0, hi: 3.0, source: 'Agric. Water Manag. (2014) 초록', check: true },
         { label: '50% 관수: 상품 수량 −24~−43%', ratio: 0.5, days: 30, metric: 'yieldPct', lo: 57, hi: 76, source: '같은 연구', check: true }
@@ -380,7 +401,7 @@
         ['고당도 등급', '11 °Brix 이상, 산도 1% 이하', '시판 감귤 품질 비교 (KCI)', '초록 확인'],
         ['과실 크기', '피복 과원은 작은 과실이 되지 않도록 적과 필수 (수치 없음)', '같은 자료', '원문 확인'],
         ['수량 감소 폭', '수치 자료 없음 → 10%로 둠', '-', '가정']
-      ].concat([CLICK_BORROWED]),
+      ].concat([CLICK_BORROWED, INCOME_BORROWED]),
       targets: [
         { label: '피복(50%) 60일: 당도 +2.6~3.0 Brix', ratio: 0.5, days: 60, metric: 'brixDelta', lo: 2.6, hi: 3.0, source: '제주농업기술원 (원문 확인)', check: true },
         { label: '피복(50%) 30일: 당도가 거의 안 오름 (30~60일 지연)', ratio: 0.5, days: 30, metric: 'brixDelta', lo: 0, hi: 1.0, source: '같은 자료', check: true }
@@ -397,13 +418,24 @@
         ['짠물(EC 3.4) 관수', '수량 −35%, 대신 당도·당·비타민C 증가', '같은 연구', '초록 확인'],
         ['생육 단계', '꽃 피는 시기가 물 부족에 가장 약함', '같은 연구', '초록 확인'],
         ['권장', '근권 수분을 보며 20% 감량', '파프리카 관수 연구 (검색 요약)', '검색 요약']
-      ].concat([CLICK_BORROWED]),
+      ].concat([CLICK_BORROWED, INCOME_BORROWED]),
       targets: [
         { label: '80% 관수: 수량 거의 그대로 (−3% 이내)', ratio: 0.8, days: 30, metric: 'yieldPct', lo: 97, hi: 101, source: 'ISHS 1034 (검색 요약)', check: true },
         { label: '80% 관수: 당도 소폭 증가 (0~+0.6)', ratio: 0.8, days: 30, metric: 'brixDelta', lo: 0.05, hi: 0.6, source: '같은 연구', check: true }
       ]
     }
   };
+
+  // 사용자 작물: 기존 작물 설정을 복사해 새 이름으로 등록 (화면의 "작물 설정"에서 사용)
+  function addCrop(key, name, fruit, params) {
+    CROPS[key] = {
+      name: name, fruit: fruit || 'tomato', params: params || {}, custom: true,
+      note: '사용자가 만든 작물입니다. 값은 모두 직접 입력한 것이며 검증되지 않았습니다.',
+      evidence: [['모든 값', '사용자가 직접 입력', '-', '가정']], targets: []
+    };
+    return CROPS[key];
+  }
+  function removeCrop(key) { if (CROPS[key] && CROPS[key].custom) delete CROPS[key]; }
 
   // 작물 목표 검증 (화면 검증표와 test.js에서 사용)
   function verifyCrop(key, seed) {
@@ -445,7 +477,7 @@
 
   return {
     DEFAULTS: DEFAULTS, LIMITS: LIMITS, mergeParams: mergeParams, PARAM_META: PARAM_META, EVIDENCE: CROPS.tomato.evidence,
-    CROPS: CROPS, verifyCrop: verifyCrop,
+    CROPS: CROPS, verifyCrop: verifyCrop, addCrop: addCrop, removeCrop: removeCrop,
     simulate: simulate, summarize: summarize, run: run, compareAll: compareAll, brixCurve: brixCurve,
     makeRng: makeRng
   };

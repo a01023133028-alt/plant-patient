@@ -111,6 +111,21 @@ Object.keys(M.CROPS).forEach(function (k) {
   check(M.CROPS[k].name + ': 관수↓ → 당도↑ (단조)', ok);
 });
 
+// 12. 소득
+console.log('12. 소득 계산');
+check('100% 관수 소득 = 기준 소득 2,437만 원', Math.abs(r100.summary.income - 2437) < 1e-6, Math.round(r100.summary.income) + '만 원');
+var pLow = M.run(opt({ mode: 'fixed', ratio: 0.5, premium: 0 })).summary, pHigh = M.run(opt({ mode: 'fixed', ratio: 0.5, premium: 0.7 })).summary;
+check('프리미엄이 클수록 소득 증가', pHigh.income > pLow.income, Math.round(pLow.income) + ' → ' + Math.round(pHigh.income));
+check('프리미엄 0이면 소득 변화 = 수량 감소만큼', Math.abs(pLow.incomeDelta - 4202 * (pLow.yieldPct / 100 - 1)) < 1, Math.round(pLow.incomeDelta) + '만 원');
+
+// 13. 사용자 작물
+console.log('13. 사용자 작물 추가·삭제');
+M.addCrop('custom_test', '시험 작물', 'melon', { baseBrix: 12, highBrix: 15, maxBrixRise: 3, baseRevenue: 5000, baseIncome: 3000 });
+var ct = M.run({ crop: 'custom_test', mode: 'fixed', ratio: 0.6, days: 30, seed: 1 });
+check('사용자 작물 계산 (값 유한, 일반 당도 12 적용)', isFinite(ct.summary.income) && ct.base.brix[0] === 12, 'Brix ' + f(ct.summary.brix));
+M.removeCrop('custom_test'); M.removeCrop('tomato');
+check('사용자 작물만 삭제됨 (기본 작물은 지워지지 않음)', !M.CROPS.custom_test && !!M.CROPS.tomato);
+
 // 10. index.html 안의 계산 로직이 model.js와 같은지
 console.log('10. index.html 안의 계산 로직이 model.js와 같음');
 var fs = require('fs'), path = require('path');
