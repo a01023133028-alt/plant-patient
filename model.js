@@ -335,6 +335,11 @@
 
   var CROPS = {
     tomato: {
+      highlights: [
+        { big: '−12%', text: '물을 47%만 줘도 수량 감소는 12% (통계적으로 차이 없음)', src: 'Plants (2024)', lv: '원문 확인' },
+        { big: '지속', text: '당도는 물 부족이 오래 이어질 때만 올라감', src: 'Plants (2024)', lv: '원문 확인' },
+        { big: '35.4회', text: '목마른 토마토는 시간당 35.4번 소리를 냄 (정상은 1번 미만)', src: 'Cell (2023)', lv: '원문 확인' }
+      ],
       name: '토마토 (논문 기준, 기본)', fruit: 'tomato',
       params: {},
       note: '발표 기본 모델. Plants (2024) 원문에 맞춤: 물 47%에서 수량 −12%(통계적으로 유의하지 않음), 당도 +1.0 정도.',
@@ -353,6 +358,11 @@
       ]
     },
     tomatoDraft: {
+      highlights: [
+        { big: '+1.5', text: '처음 계획의 목표: 물 70%에서 당도 +1.5 이상', src: '처음 프롬프트', lv: '가정' },
+        { big: '47%', text: '논문의 수량 −12%는 사실 물 47% 조건이었음', src: 'Plants (2024)', lv: '원문 확인' },
+        { big: '35.4회', text: '목마른 토마토는 시간당 35.4번 소리를 냄 (정상은 1번 미만)', src: 'Cell (2023)', lv: '원문 확인' }
+      ],
       name: '토마토 (처음 초안)', fruit: 'tomato', params: { maxBrixRise: 4.0, yieldLinear: 0.30, yieldQuad: 2.5 },
       note: '처음 프롬프트 기준(70%: 당도 +1.5 이상, 수량 −8~16%)에 맞춘 설정. 논문의 −12%는 물 47% 조건이었으므로 원문보다 당도도 수량 손해도 크게 나옵니다. 비교용.',
       evidence: [
@@ -373,6 +383,11 @@
       ]
     },
     cherry: {
+      highlights: [
+        { big: '+12~16%', text: '물을 줄이면 방울토마토 당도가 12~16% 오름', src: 'Agriculture (2021) 외', lv: '검색 요약' },
+        { big: '가을 −5~20%', text: '가을 작기는 수량 차이가 작음, 봄 작기는 크게 감소', src: 'Agric. Water Manag.', lv: '초록 확인' },
+        { big: '35.4회', text: '목마른 토마토는 시간당 35.4번 소리를 냄 (정상은 1번 미만)', src: 'Cell (2023)', lv: '원문 확인' }
+      ],
       name: '방울토마토', fruit: 'cherry',
       params: { baseBrix: 7, highBrix: 9, maxBrixRise: 1.7, yieldLinear: 0.255, yieldQuad: 2.5 },
       note: '당도 증가 +12~16%, 가을 작기 수량 감소 5~20%에 맞춤.',
@@ -390,6 +405,11 @@
       ]
     },
     strawberry: {
+      highlights: [
+        { big: '−30~36%', text: '물을 줄이면 상품 수량이 30~36% 감소, 당도는 그대로', src: 'Front. Hortic. (2025)', lv: '검색 요약' },
+        { big: '−25%', text: '심으면서부터 물을 줄이면 당이 오히려 25% 줄어듦', src: 'Hortic. Environ. Biotechnol. (2023)', lv: '초록 확인' },
+        { big: '자료 없음', text: '딸기의 소리는 측정된 적 없음 → 토마토 값 사용', src: 'Cell (2023)', lv: '가정' }
+      ],
       name: '딸기', fruit: 'strawberry',
       params: { baseBrix: 9, highBrix: 11, maxBrixRise: 0.4, yieldLinear: 0.84, yieldQuad: 2.5 },
       note: '수량은 크게 줄고, 당도는 연구에 따라 증가·변화 없음·감소가 모두 보고됨. 당도 상승을 아주 작게 잡음. 물을 줄여 얻는 것이 적은 작물.',
@@ -407,6 +427,11 @@
       ]
     },
     melon: {
+      highlights: [
+        { big: '+23%', text: '물을 절반(50%)으로 줄이면 당도 23% 증가', src: 'Agric. Water Manag. (2014)', lv: '초록 확인' },
+        { big: '−30%', text: '대신 상품 수량 30% 감소 (주로 열매가 작아짐)', src: 'Agric. Water Manag. (2014)', lv: '초록 확인' },
+        { big: '37~45%', text: '물을 37~45% 아낄 수 있음 (Mission·Da Vinci 품종)', src: 'Agric. Water Manag. (2014)', lv: '초록 확인' }
+      ],
       name: '멜론', fruit: 'melon',
       params: { baseBrix: 11, highBrix: 14, maxBrixRise: 3.1, yieldLinear: 0.4, yieldQuad: 2.5 },
       note: '50% 관수에서 당도 +23%, 상품 수량 −30%(주로 과실 크기 감소)에 맞춤. 품종에 따라 수량 감소가 −24~43%로 다름.',
@@ -424,6 +449,11 @@
       ]
     },
     citrus: {
+      highlights: [
+        { big: '+2.6~3.0', text: '타이벡으로 빗물을 막으면 당도가 2.6~3.0 °Bx 오름', src: '제주농업기술원 (2019)', lv: '원문 확인' },
+        { big: '30~60일', text: '피복하고 30~60일이 지나야 물 스트레스가 시작됨', src: '제주농업기술원 (2019)', lv: '원문 확인' },
+        { big: '9.9 vs 11.7', text: '물이 고인 나무는 당도가 1.8 °Bx 낮음', src: '제주농업기술원 (2019)', lv: '원문 확인' }
+      ],
       name: '감귤 (타이벡 피복)', fruit: 'citrus',
       params: { baseBrix: 10, highBrix: 11, maxBrixRise: 3.8, yieldLinear: 0.23, yieldQuad: 2.5, sustainMinDays: 25, stressAccum: 0.25 },
       note: '타이벡으로 빗물을 막아 물을 줄이는 실제 재배법. 피복 후 30~60일 지나야 스트레스가 시작돼 재배 기간을 60일로 늘려 보세요. 관수 50%를 "피복"으로 봄.',
@@ -443,6 +473,11 @@
       ]
     },
     pepper: {
+      highlights: [
+        { big: '80%', text: '물을 80%로 줄여도 수량이 오히려 늘어남 (물 10% 절약)', src: 'ISHS Acta Hortic. 1034', lv: '초록 확인' },
+        { big: '−35%', text: '짠물로 키우면 수량 35% 감소, 대신 당도는 오름', src: 'ISHS Acta Hortic. 1034', lv: '초록 확인' },
+        { big: '자료 없음', text: '파프리카의 소리는 측정된 적 없음 → 토마토 값 사용', src: 'Cell (2023)', lv: '가정' }
+      ],
       name: '파프리카', fruit: 'pepper',
       params: { baseBrix: 7, highBrix: 8, maxBrixRise: 0.8, yieldLinear: 0.036, yieldQuad: 2.5 },
       note: '20% 정도 줄여도 수량이 거의 줄지 않는다는 연구가 있음. 당도 상승은 작게 잡음.',
@@ -466,7 +501,8 @@
     CROPS[key] = {
       name: name, fruit: fruit || 'tomato', params: params || {}, custom: true,
       note: '사용자가 만든 작물입니다. 값은 모두 직접 입력한 것이며 검증되지 않았습니다.',
-      evidence: [['모든 값', '사용자가 직접 입력', '-', '가정']], targets: []
+      evidence: [['모든 값', '사용자가 직접 입력', '-', '가정']], targets: [],
+      highlights: [{ big: '직접 입력', text: '사용자가 만든 작물이라 근거가 없는 값입니다', src: '-', lv: '가정' }]
     };
     return CROPS[key];
   }
@@ -493,7 +529,7 @@
     });
   }
 
-  // 방식별 비교 (발표 파일럿 설계 3그룹 + ④ 이익 맞춤)
+  // 방식별 비교 (① 100% · ② 70% 고정 · ③ 소리 브레이크 · ④ 이익 맞춤)
   function compareAll(opts) {
     var groups = [
       { key: 'full', name: '① 충분히 관수 (100%)', mode: 'full' },
