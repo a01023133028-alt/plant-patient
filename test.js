@@ -126,6 +126,27 @@ check('사용자 작물 계산 (값 유한, 일반 당도 12 적용)', isFinite(
 M.removeCrop('custom_test'); M.removeCrop('tomato');
 check('사용자 작물만 삭제됨 (기본 작물은 지워지지 않음)', !M.CROPS.custom_test && !!M.CROPS.tomato);
 
+// 14. 이익 맞춤 (자동): 모든 작물·날씨·프리미엄에서 손해 없음, 고정 관수 중 최대 소득
+console.log('14. 이익 맞춤 (자동): 어떤 작물에서도 손해가 나지 않음');
+var noLoss = true, isMax = true, worst = '';
+Object.keys(M.CROPS).forEach(function (k) {
+  ['normal', 'heat'].forEach(function (w) {
+    [0, 0.3, 0.7].forEach(function (pm) {
+      var o = { crop: k, days: 30, weather: w, premium: pm, seed: 42 };
+      var pr = M.run(Object.assign({ mode: 'profit' }, o)).summary;
+      if (pr.incomeDelta < -1e-6) { noLoss = false; worst = k + '/' + w + '/' + pm; }
+      [0.4, 0.6, 0.8, 1.0].forEach(function (r) {
+        if (M.run(Object.assign({ mode: 'fixed', ratio: r }, o)).summary.income > pr.income + 1e-6) isMax = false;
+      });
+    });
+  });
+});
+check('모든 작물 × 날씨 2 × 프리미엄 3: 소득 변화 ≥ 0', noLoss, worst);
+check('고정 관수(40·60·80·100%)보다 소득이 낮지 않음', isMax);
+var cit = M.run({ mode: 'profit', crop: 'citrus', days: 60, premium: 0.3, seed: 42 });
+check('감귤(60일, 프리미엄 30%)은 물을 줄여 이익', cit.res.bestRatio < 1 && cit.summary.incomeDelta > 0, '관수 ' + Math.round(cit.res.bestRatio * 100) + '%, +' + Math.round(cit.summary.incomeDelta) + '만 원');
+check('딸기는 이익이 나는 프리미엄이 없음 (물 줄이기가 맞지 않음)', M.breakEvenPremium({ crop: 'strawberry', days: 30, seed: 42 }) === null);
+
 // 10. index.html 안의 계산 로직이 model.js와 같은지
 console.log('10. index.html 안의 계산 로직이 model.js와 같음');
 var fs = require('fs'), path = require('path');

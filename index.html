@@ -215,6 +215,7 @@
       <label class="radio"><input type="radio" name="mode" value="full"> ① 충분히 관수 <small>(100% 고정)</small></label>
       <label class="radio"><input type="radio" name="mode" value="fixed" checked> ② 고정 감량 <small>(비율 선택)</small></label>
       <label class="radio"><input type="radio" name="mode" value="brake"> ③ 소리 브레이크 <small>(자동)</small></label>
+      <label class="radio"><input type="radio" name="mode" value="profit"> ④ 이익 맞춤 <small>(자동, 손해 없음)</small></label>
     </fieldset>
 
     <div id="ratioBox">
@@ -356,7 +357,7 @@
     <div class="chart big"><div class="ct">관수량과 당도의 관계 <small>재배 기간이 끝났을 때의 당도 · 점 = 지금 설정</small></div><canvas id="cRel"></canvas></div>
     <div class="chart small"><div class="ct">날짜별 관수 비율 (%) <small id="ratioLegend"></small></div><canvas id="cRatio"></canvas></div>
     <div class="chart"><div class="ct">시간당 클릭 수 (회/시간) <small>점선: 브레이크 5 · 경보 15</small></div><canvas id="cClick"></canvas></div>
-    <div class="chart"><div class="ct">날짜별 당도 (Brix) <small>점선: 고당도 기준 8</small></div><canvas id="cBrix"></canvas></div>
+    <div class="chart"><div class="ct">날짜별 당도 (Brix) <small id="brixLegend">점선: 고당도 기준</small></div><canvas id="cBrix"></canvas></div>
     <div class="cardnote">아래 변화는 모두 <b>① 충분히 관수(100%)</b>와 비교한 값이에요.</div>
     <div class="cards">
       <div class="card"><div class="k">당도</div><div class="v" id="kBrix">-</div><div class="d" id="dBrix"></div></div>
@@ -368,7 +369,7 @@
 </main>
 
 <footer>
-  <button class="btn primary" id="openCmp">📊 세 방식 한 번에 비교</button>
+  <button class="btn primary" id="openCmp">📊 방식별 한 번에 비교</button>
   <button class="btn" id="openAssume">📘 모델 가정과 근거</button>
   <div class="disclaimer">ⓘ 이 시뮬레이터는 공개 연구 수치에 맞춘 교육용 모델입니다. 실제 재배 결과가 아니며, 파일럿 실험으로 검증할 예정입니다.</div>
 </footer>
@@ -403,7 +404,7 @@
 <div class="modal" id="cmpModal">
   <div class="sheet">
     <div class="sheethead">
-      <h2>세 방식 한 번에 비교</h2>
+      <h2>방식별 한 번에 비교</h2>
       <span id="cmpCond" class="note" style="font-size:14px"></span>
       <button class="btn" id="saveCsv">💾 표 CSV 저장</button>
       <button class="btn" id="savePng">🖼 비교 화면 PNG 저장</button>
@@ -412,6 +413,9 @@
     <canvas id="cmpCanvas" width="1600" height="900"></canvas>
     <p class="warn">⚠ 가정값에 따라 결과가 달라집니다. 소리 브레이크가 항상 유리하도록 맞춘 모델이 아닙니다.</p>
     <table id="cmpTable"></table>
+    <h3 style="margin:16px 0 4px;color:var(--ink)">작물별: 이익이 가장 큰 관수량 (④ 이익 맞춤)</h3>
+    <p class="note" style="margin:0 0 6px">같은 날씨·기간·프리미엄으로 작물마다 관수 40~110%를 모두 계산했습니다. 작물 설정에서 바꾼 값도 반영됩니다.</p>
+    <table id="cropProfit"></table>
   </div>
 </div>
 
@@ -721,7 +725,42 @@
     };
   }
 
+  // ── 이익 맞춤 (자동) ──
+  // 고정 관수 40~110%(5%p 간격)를 모두 계산해 소득이 가장 큰 비율을 고름.
+  // 100% 관수보다 이익이 나지 않으면 100%를 유지하므로 손해가 나지 않음.
+  var PROFIT_RATIOS = [];
+  for (var pr = 40; pr <= 110; pr += 5) PROFIT_RATIOS.push(pr / 100);
+  function copyOpts(opts, extra) {
+    var o = {};
+    for (var k in opts) o[k] = opts[k];
+    for (var j in extra) o[j] = extra[j];
+    return o;
+  }
+  function bestRatio(opts) {
+    var base = simulate(copyOpts(opts, { mode: 'full' })), b0 = base.income[base.days - 1];
+    var best = { ratio: 1.0, gain: 0 };
+    PROFIT_RATIOS.forEach(function (r) {
+      var res = simulate(copyOpts(opts, { mode: 'fixed', ratio: r }));
+      var gain = res.income[res.days - 1] - b0;
+      if (gain > best.gain + 1e-9) best = { ratio: r, gain: gain };
+    });
+    return best;
+  }
+  // 이익이 나기 시작하는 최소 프리미엄 (0~200%, 5%p 간격). 없으면 null
+  function breakEvenPremium(opts) {
+    for (var p = 0; p <= 2.0001; p += 0.05) {
+      if (bestRatio(copyOpts(opts, { premium: Math.round(p * 100) / 100 })).gain > 0) return Math.round(p * 100) / 100;
+    }
+    return null;
+  }
+
   function run(opts) {
+    if (opts && opts.mode === 'profit') {
+      var best = bestRatio(opts);
+      var r = run(copyOpts(opts, { mode: best.ratio < 1 ? 'fixed' : 'full', ratio: best.ratio }));
+      r.res.mode = 'profit'; r.res.bestRatio = best.ratio; r.res.bestGain = best.gain;
+      return r;
+    }
     var res = simulate(opts);
     var bo = {};
     for (var k in opts) bo[k] = opts[k];
@@ -908,12 +947,13 @@
     });
   }
 
-  // 세 방식 비교 (발표 파일럿 설계와 같은 3그룹)
+  // 방식별 비교 (발표 파일럿 설계 3그룹 + ④ 이익 맞춤)
   function compareAll(opts) {
     var groups = [
       { key: 'full', name: '① 충분히 관수 (100%)', mode: 'full' },
       { key: 'fixed', name: '② 고정 감량 (70%)', mode: 'fixed', ratio: 0.7 },
-      { key: 'brake', name: '③ 소리 브레이크', mode: 'brake' }
+      { key: 'brake', name: '③ 소리 브레이크', mode: 'brake' },
+      { key: 'profit', name: '④ 이익 맞춤 (자동)', mode: 'profit' }
     ];
     return groups.map(function (g) {
       var o = {};
@@ -927,7 +967,7 @@
 
   return {
     DEFAULTS: DEFAULTS, LIMITS: LIMITS, mergeParams: mergeParams, PARAM_META: PARAM_META, EVIDENCE: CROPS.tomato.evidence,
-    CROPS: CROPS, verifyCrop: verifyCrop, addCrop: addCrop, removeCrop: removeCrop,
+    CROPS: CROPS, verifyCrop: verifyCrop, bestRatio: bestRatio, breakEvenPremium: breakEvenPremium, addCrop: addCrop, removeCrop: removeCrop,
     simulate: simulate, summarize: summarize, run: run, compareAll: compareAll, brixCurve: brixCurve,
     makeRng: makeRng
   };
@@ -961,6 +1001,7 @@
   function recompute(keepT) {
     var o = opts();
     state.sim = M.run(o);
+    state.breakEven = o.mode === 'profit' && state.sim.res.bestRatio >= 1 ? M.breakEvenPremium(o) : undefined;
     if (!keepT) state.t = 0;
     state.t = Math.min(state.t, o.days - 1);
     render();
@@ -970,7 +1011,7 @@
     var mode = radioVal('mode');
     $('ratio').disabled = mode !== 'fixed';
     $('ratioBox').classList.toggle('dis', mode !== 'fixed');
-    $('ratioVal').textContent = mode === 'full' ? '100%' : mode === 'brake' ? '자동' : $('ratio').value + '%';
+    $('ratioVal').textContent = mode === 'full' ? '100%' : mode === 'brake' || mode === 'profit' ? '자동' : $('ratio').value + '%';
     $('daysVal').textContent = $('days').value + '일';
     $('premVal').textContent = $('premium').value + '%';
     $('speedVal').textContent = '하루 ' + (2 / +$('speed').value).toFixed(1) + '초';
@@ -1009,11 +1050,15 @@
     var step = n > 40 ? 10 : n > 20 ? 5 : n > 10 ? 2 : 1;
     for (var d = 1; d <= n; d++) if (d === 1 || d % step === 0) g.fillText(d + '일', X(d - 1), T + ph + 4);
     g.strokeStyle = C.line; g.beginPath(); g.moveTo(L, T); g.lineTo(L, T + ph); g.lineTo(W - R, T + ph); g.stroke();
+    var labelYs = [];
     (cfg.refs || []).forEach(function (r) {
       g.save(); g.setLineDash([5, 4]); g.strokeStyle = r.color; g.lineWidth = 1.5;
       g.beginPath(); g.moveTo(L, Y(r.v)); g.lineTo(W - R, Y(r.v)); g.stroke(); g.restore();
-      g.fillStyle = r.color; g.textAlign = 'right'; g.textBaseline = 'bottom'; g.font = 'bold 13px "Malgun Gothic", sans-serif';
-      g.fillText(r.label, W - R - 2, Y(r.v) - 1);
+      // 다른 기준선 이름표와 겹치면 선 아래쪽에 씀
+      var below = labelYs.some(function (y) { return Math.abs(y - Y(r.v)) < 16; });
+      labelYs.push(Y(r.v));
+      g.fillStyle = r.color; g.textAlign = 'right'; g.textBaseline = below ? 'top' : 'bottom'; g.font = 'bold 13px "Malgun Gothic", sans-serif';
+      g.fillText(r.label, W - R - 2, Y(r.v) + (below ? 2 : -1));
       g.font = '13px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
     });
     var upto = cfg.upto;
@@ -1341,6 +1386,12 @@
   // 오늘 상태를 쉬운 말로
   function explain(res, t) {
     var ph = res.phase[t], P = res.params, s = '';
+    if (res.mode === 'profit') {
+      if (res.bestRatio < 1) return '💰 <b>관수 ' + Math.round(res.bestRatio * 100) + '%가 이익이 가장 커요</b> (300평당 ' + sign(res.bestGain, 0) + '만 원). 40~110%를 모두 계산해 골랐어요.';
+      var be = state.breakEven;
+      return '💰 <b>지금 조건에선 물을 줄여도 이익이 안 나서 100%를 유지해요</b> (손해 0). ' +
+        (be == null ? '이 작물은 프리미엄을 올려도 물 줄이기가 맞지 않아요.' : '고당도 프리미엄이 <b>' + Math.round(be * 100) + '% 이상</b>이면 이익이 나요.');
+    }
     if (ph === 'alarm') s = res.mode === 'brake' ? '🚨 <b>소리가 급증했어요!</b> 식물이 많이 목말라해서 오늘 바로 100%로 물을 줬어요.'
       : '🚨 <b>소리가 경보 수준이에요.</b> 이대로 두면 수량이 크게 줄 수 있어요.';
     else if (ph === 'hold') s = '✋ <b>소리가 늘어서 감량을 멈췄어요.</b> 한 단계 되돌려 그 수준을 유지합니다.';
@@ -1365,6 +1416,7 @@
     $('dayNow').textContent = t + 1; $('dayTotal').textContent = res.days;
     $('prog').style.width = ((t + 1) / res.days * 100) + '%';
     var ph = res.phase[t], b = $('badge');
+    if (res.mode === 'profit') $('ratioVal').textContent = '자동 ' + Math.round(res.bestRatio * 100) + '%';
     b.className = 'badge ' + ph; b.textContent = BADGE[ph];
     $('rRatio').textContent = Math.round(res.ratio[t] * 100) + '%';
     $('rClick').textContent = res.clicks[t].toFixed(1);
@@ -1375,8 +1427,10 @@
     $('explain').innerHTML = explain(res, t);
     drawCharts();
 
-    $('kBrix').innerHTML = sm.brix.toFixed(1) + ' <small>Brix' + (sm.brix >= res.params.highBrix ? ' · 고당도' : '') + '</small>';
+    $('kBrix').innerHTML = sm.brix.toFixed(1) + ' <small>Brix</small>';
     setDelta('dBrix', sm.brixDelta, 1, '', true);
+    if (sm.brix >= res.params.highBrix) $('dBrix').textContent += ' · 고당도';
+    $('brixLegend').textContent = '점선: 고당도 기준 ' + res.params.highBrix + ' · 일반 ' + res.params.baseBrix;
     $('kYield').innerHTML = sm.yieldPct.toFixed(1) + '<small>%</small>';
     setDelta('dYield', sm.yieldPct - 100, 1, '%p', true, { inc: '증가', dec: '감소' });
     $('kWater').innerHTML = sm.waterPct.toFixed(0) + '<small>%</small>';
@@ -1455,6 +1509,16 @@
       return '<tr>' + r.map(function (c, j) { return i === 0 ? '<th>' + c + '</th>' : '<td' + (j ? ' class="n"' : '') + '>' + c + '</td>'; }).join('') + '</tr>';
     }).join('');
     drawCompare($('cmpCanvas'), cmpData);
+    var cp = '<tr><th>작물</th><th>이익 최대 관수</th><th>당도 변화</th><th>수량</th><th>300평당 이익</th><th>이익이 나는 최소 프리미엄</th></tr>';
+    Object.keys(M.CROPS).forEach(function (k) {
+      var oc = {}; for (var x in o) oc[x] = o[x];
+      oc.crop = k; oc.mode = 'profit'; oc.params = store.edits[k] || {};
+      var r = M.run(oc), sm = r.summary, be = M.breakEvenPremium(oc);
+      cp += '<tr><td>' + esc(M.CROPS[k].name) + '</td><td class="n">' + Math.round(r.res.bestRatio * 100) + '%' + (r.res.bestRatio >= 1 ? ' (유지)' : '') +
+        '</td><td class="n">' + sign(sm.brixDelta, 2) + '</td><td class="n">' + sm.yieldPct.toFixed(1) + '%</td><td class="n ' + (sm.incomeDelta > 0 ? 'ok' : '') + '">' + sign(sm.incomeDelta, 0) + '만 원</td><td class="n">' +
+        (be == null ? '없음 (물 줄이기가 맞지 않음)' : Math.round(be * 100) + '%') + '</td></tr>';
+    });
+    $('cropProfit').innerHTML = cp;
     $('cmpModal').classList.add('open');
   }
   function drawCompare(cv, data) {
@@ -1462,9 +1526,9 @@
     var F = '"Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
     g.fillStyle = C.ink; g.font = 'bold 40px ' + F; g.textAlign = 'left'; g.textBaseline = 'top';
-    g.fillText('세 방식 한 번에 비교', 50, 34);
+    g.fillText('방식별 한 번에 비교', 50, 34);
     g.fillStyle = C.text; g.font = '24px ' + F; g.fillText(condText(data.o), 50, 88);
-    var cols = [C.gray, C.blue, C.green];
+    var cols = [C.gray, C.blue, C.green, '#D9682B'], ng = data.groups.length;
     var metrics = [
       { name: '당도 (Brix)', get: function (s) { return s.brix; }, f: function (v) { return v.toFixed(1); }, ref: data.groups[0].res.params.highBrix, refL: '고당도' },
       { name: '수량 (일반 대비 %)', get: function (s) { return s.yieldPct; }, f: function (v) { return v.toFixed(1) + '%'; } },
@@ -1477,12 +1541,12 @@
       var vmax = Math.max.apply(null, vals.concat(m.ref || 0)) * 1.15;
       g.fillStyle = '#F5F6F1'; g.fillRect(x0 + 8, top, pw - 16, ch + 60);
       g.fillStyle = C.ink; g.font = 'bold 24px ' + F; g.textAlign = 'center'; g.fillText(m.name, x0 + pw / 2, top + 14);
-      var bt = top + 70, bh = ch - 90, bw = (pw - 70) / 3;
+      var bt = top + 70, bh = ch - 90, bw = (pw - 50) / ng;
       vals.forEach(function (v, i) {
-        var h = Math.max(0, v / vmax * bh), bx = x0 + 35 + i * bw;
+        var h = Math.max(0, v / vmax * bh), bx = x0 + 25 + i * bw;
         g.fillStyle = cols[i]; g.fillRect(bx + 6, bt + bh - h, bw - 12, h);
-        g.fillStyle = C.ink; g.font = 'bold 22px ' + F; g.textBaseline = 'bottom'; g.fillText(m.f(v), bx + bw / 2, bt + bh - h - 6);
-        g.textBaseline = 'top'; g.font = 'bold 22px ' + F; g.fillText(['①', '②', '③'][i], bx + bw / 2, bt + bh + 10);
+        g.fillStyle = C.ink; g.font = 'bold ' + (ng > 3 ? 18 : 22) + 'px ' + F; g.textBaseline = 'bottom'; g.fillText(m.f(v), bx + bw / 2, bt + bh - h - 6);
+        g.textBaseline = 'top'; g.font = 'bold 22px ' + F; g.fillText(['①', '②', '③', '④'][i], bx + bw / 2, bt + bh + 10);
       });
       if (m.ref) {
         var ry = bt + bh - m.ref / vmax * bh;
@@ -1495,8 +1559,8 @@
     var ly = top + ch + 90;
     g.textAlign = 'left'; g.font = '24px ' + F;
     data.groups.forEach(function (gr, i) {
-      g.fillStyle = cols[i]; g.fillRect(50 + i * 420, ly, 26, 26);
-      g.fillStyle = C.ink; g.fillText(gr.name, 86 + i * 420, ly);
+      g.fillStyle = cols[i]; g.fillRect(50 + i * 385, ly, 26, 26);
+      g.fillStyle = C.ink; g.fillText(gr.name, 86 + i * 385, ly);
     });
     g.fillStyle = C.red; g.font = 'bold 22px ' + F; g.fillText('⚠ 가정값에 따라 결과가 달라집니다.', 50, ly + 50);
     g.fillStyle = C.text; g.font = '20px ' + F;
@@ -1511,10 +1575,10 @@
     var csv = cmpData.rows.concat([[condText(cmpData.o)], ['가정값에 따라 결과가 달라집니다. 교육용 모델이며 실제 재배 결과가 아닙니다.']])
       .map(function (r) { return r.map(function (c) { c = String(c); return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(','); }).join('\r\n');
     var url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
-    download('세방식비교.csv', url);
+    download('방식별비교.csv', url);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   };
-  $('savePng').onclick = function () { download('세방식비교.png', $('cmpCanvas').toDataURL('image/png')); };
+  $('savePng').onclick = function () { download('방식별비교.png', $('cmpCanvas').toDataURL('image/png')); };
 
   // ── 모델 가정과 근거 ──
   var LV = { '원문 확인': 'orig', '초록 확인': 'abs', '검색 요약': 'sum', '가정': 'asm' };

@@ -271,7 +271,42 @@
     };
   }
 
+  // ── 이익 맞춤 (자동) ──
+  // 고정 관수 40~110%(5%p 간격)를 모두 계산해 소득이 가장 큰 비율을 고름.
+  // 100% 관수보다 이익이 나지 않으면 100%를 유지하므로 손해가 나지 않음.
+  var PROFIT_RATIOS = [];
+  for (var pr = 40; pr <= 110; pr += 5) PROFIT_RATIOS.push(pr / 100);
+  function copyOpts(opts, extra) {
+    var o = {};
+    for (var k in opts) o[k] = opts[k];
+    for (var j in extra) o[j] = extra[j];
+    return o;
+  }
+  function bestRatio(opts) {
+    var base = simulate(copyOpts(opts, { mode: 'full' })), b0 = base.income[base.days - 1];
+    var best = { ratio: 1.0, gain: 0 };
+    PROFIT_RATIOS.forEach(function (r) {
+      var res = simulate(copyOpts(opts, { mode: 'fixed', ratio: r }));
+      var gain = res.income[res.days - 1] - b0;
+      if (gain > best.gain + 1e-9) best = { ratio: r, gain: gain };
+    });
+    return best;
+  }
+  // 이익이 나기 시작하는 최소 프리미엄 (0~200%, 5%p 간격). 없으면 null
+  function breakEvenPremium(opts) {
+    for (var p = 0; p <= 2.0001; p += 0.05) {
+      if (bestRatio(copyOpts(opts, { premium: Math.round(p * 100) / 100 })).gain > 0) return Math.round(p * 100) / 100;
+    }
+    return null;
+  }
+
   function run(opts) {
+    if (opts && opts.mode === 'profit') {
+      var best = bestRatio(opts);
+      var r = run(copyOpts(opts, { mode: best.ratio < 1 ? 'fixed' : 'full', ratio: best.ratio }));
+      r.res.mode = 'profit'; r.res.bestRatio = best.ratio; r.res.bestGain = best.gain;
+      return r;
+    }
     var res = simulate(opts);
     var bo = {};
     for (var k in opts) bo[k] = opts[k];
@@ -458,12 +493,13 @@
     });
   }
 
-  // 세 방식 비교 (발표 파일럿 설계와 같은 3그룹)
+  // 방식별 비교 (발표 파일럿 설계 3그룹 + ④ 이익 맞춤)
   function compareAll(opts) {
     var groups = [
       { key: 'full', name: '① 충분히 관수 (100%)', mode: 'full' },
       { key: 'fixed', name: '② 고정 감량 (70%)', mode: 'fixed', ratio: 0.7 },
-      { key: 'brake', name: '③ 소리 브레이크', mode: 'brake' }
+      { key: 'brake', name: '③ 소리 브레이크', mode: 'brake' },
+      { key: 'profit', name: '④ 이익 맞춤 (자동)', mode: 'profit' }
     ];
     return groups.map(function (g) {
       var o = {};
@@ -477,7 +513,7 @@
 
   return {
     DEFAULTS: DEFAULTS, LIMITS: LIMITS, mergeParams: mergeParams, PARAM_META: PARAM_META, EVIDENCE: CROPS.tomato.evidence,
-    CROPS: CROPS, verifyCrop: verifyCrop, addCrop: addCrop, removeCrop: removeCrop,
+    CROPS: CROPS, verifyCrop: verifyCrop, bestRatio: bestRatio, breakEvenPremium: breakEvenPremium, addCrop: addCrop, removeCrop: removeCrop,
     simulate: simulate, summarize: summarize, run: run, compareAll: compareAll, brixCurve: brixCurve,
     makeRng: makeRng
   };
